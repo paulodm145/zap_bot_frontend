@@ -1,0 +1,124 @@
+'use client';
+
+import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react';
+import {
+  addEdge,
+  Background,
+  Controls,
+  Handle,
+  MarkerType,
+  MiniMap,
+  NodeToolbar,
+  Position,
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  type Connection,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from '@xyflow/react';
+import { Bot, ChevronLeft, GitBranch, MessageSquareText, MousePointer2, Play, Plus, Redo2, Save, Send, Trash2, Undo2, Users, Webhook, X } from 'lucide-react';
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/logo';
+import styles from './flow-editor.module.css';
+
+type FlowData = { label: string; detail: string; kind: string; icon: string; content: string };
+type Tool = { label: string; detail: string; icon: typeof MessageSquareText; tone: string; content: string };
+
+const iconMap = { message: MessageSquareText, condition: GitBranch, ai: Bot, http: Webhook, team: Users };
+const edgeDefaults = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
+
+function FlowNode({ id, data, selected }: NodeProps<Node<FlowData>>) {
+  const Icon = iconMap[data.icon as keyof typeof iconMap] ?? MessageSquareText;
+  const { deleteElements } = useReactFlow();
+  return <div className={`${styles.node} ${selected ? styles.selected : ''}`}><NodeToolbar isVisible={selected} position={Position.Right}><button type="button" className={styles.removeNode} onClick={(event) => { event.stopPropagation(); void deleteElements({ nodes: [{ id }] }); }} aria-label={`Remover bloco ${data.detail}`}><Trash2 size={14} />Remover</button></NodeToolbar><Handle type="target" position={Position.Top} /><div className={`${styles.nodeIcon} ${styles[data.kind]}`}><Icon size={17} /></div><div><small>{data.label}</small><strong>{data.detail}</strong></div><Handle type="source" position={Position.Bottom} /></div>;
+}
+
+const nodeTypes = { flowNode: FlowNode };
+const initialNodes: Node<FlowData>[] = [
+  { id: '1', type: 'flowNode', position: { x: 310, y: 40 }, data: { label: 'Mensagem', detail: 'Boas-vindas', kind: 'message', icon: 'message', content: 'Olá! Bem-vindo à Aurora 👋\nComo podemos ajudar você hoje?' } },
+  { id: '2', type: 'flowNode', position: { x: 310, y: 180 }, data: { label: 'Condição', detail: 'Identificar intenção', kind: 'condition', icon: 'condition', content: 'Escolha uma opção para continuar.' } },
+  { id: '3', type: 'flowNode', position: { x: 90, y: 345 }, data: { label: 'Assistente IA', detail: 'Dúvidas sobre produtos', kind: 'ai', icon: 'ai', content: 'Responda às dúvidas usando o catálogo de produtos.' } },
+  { id: '4', type: 'flowNode', position: { x: 530, y: 345 }, data: { label: 'Direcionar setor', detail: 'Equipe comercial', kind: 'team', icon: 'team', content: 'Transferir esta conversa para o setor Comercial.' } },
+];
+const initialEdges: Edge[] = [
+  { id: 'e1', source: '1', target: '2', ...edgeDefaults },
+  { id: 'e2', source: '2', target: '3', label: 'Suporte', ...edgeDefaults },
+  { id: 'e3', source: '2', target: '4', label: 'Comprar', ...edgeDefaults },
+];
+const tools: Tool[] = [
+  { label: 'Mensagem', detail: 'Envie texto ou mídia', icon: MessageSquareText, tone: 'message', content: 'Digite a mensagem que será enviada.' },
+  { label: 'Condição', detail: 'Crie caminhos lógicos', icon: GitBranch, tone: 'condition', content: 'Configure as opções e condições de saída.' },
+  { label: 'Assistente IA', detail: 'Responda com inteligência', icon: Bot, tone: 'ai', content: 'Descreva como o assistente deve responder.' },
+  { label: 'Integração HTTP', detail: 'Consulte outros sistemas', icon: Webhook, tone: 'http', content: 'Configure a requisição HTTP.' },
+  { label: 'Direcionar setor', detail: 'Transfira para uma equipe', icon: Users, tone: 'team', content: 'Escolha o setor de destino.' },
+];
+
+function FlowEditorContent() {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowData>>(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
+  const [selectedId, setSelectedId] = useState<string | null>('2');
+  const [saved, setSaved] = useState(false);
+  const nextId = useRef(10);
+  const canvasRef = useRef<HTMLElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
+  const selected = useMemo(() => nodes.find((node) => node.id === selectedId) ?? null, [nodes, selectedId]);
+
+  const save = useCallback(() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }, []);
+  const connect = useCallback((connection: Connection) => setEdges((current) => addEdge({ ...connection, ...edgeDefaults }, current)), [setEdges]);
+
+  function createNode(tool: Tool, position: { x: number; y: number }) {
+    const id = String(nextId.current++);
+    const node: Node<FlowData> = { id, type: 'flowNode', position, data: { label: tool.label, detail: `Novo bloco de ${tool.label.toLowerCase()}`, kind: tool.tone, icon: tool.tone, content: tool.content } };
+    setNodes((current) => [...current, node]);
+    setSelectedId(id);
+  }
+
+  function addAtCenter(tool: Tool) {
+    const bounds = canvasRef.current?.getBoundingClientRect();
+    const screenPosition = bounds ? { x: bounds.left + bounds.width / 2 - 112, y: bounds.top + bounds.height / 2 - 33 } : { x: 400, y: 300 };
+    createNode(tool, screenToFlowPosition(screenPosition));
+  }
+
+  function startDrag(event: DragEvent<HTMLButtonElement>, tool: Tool) {
+    event.dataTransfer.setData('application/zapbot-flow', JSON.stringify({ label: tool.label, tone: tool.tone }));
+    event.dataTransfer.effectAllowed = 'copy';
+  }
+
+  function drop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    const raw = event.dataTransfer.getData('application/zapbot-flow');
+    if (!raw) return;
+    const dragged = JSON.parse(raw) as Pick<Tool, 'label' | 'tone'>;
+    const tool = tools.find((item) => item.label === dragged.label && item.tone === dragged.tone);
+    if (tool) createNode(tool, screenToFlowPosition({ x: event.clientX - 112, y: event.clientY - 33 }));
+  }
+
+  function updateSelected(field: 'detail' | 'content', value: string) {
+    if (!selectedId) return;
+    setNodes((current) => current.map((node) => node.id === selectedId ? { ...node, data: { ...node.data, [field]: value } } : node));
+  }
+
+  function deleteSelected() {
+    if (!selectedId) return;
+    setNodes((current) => current.filter((node) => node.id !== selectedId));
+    setEdges((current) => current.filter((edge) => edge.source !== selectedId && edge.target !== selectedId));
+    setSelectedId(null);
+  }
+
+  return <main className={styles.editor}>
+    <header className={styles.header}><div className={styles.brand}><Logo compact /><Link href="/dashboard"><ChevronLeft size={18} />Meus fluxos</Link></div><div className={styles.title}><strong>Atendimento principal</strong><Badge tone="neutral">Rascunho</Badge><small>{saved ? 'Alterações salvas' : `${nodes.length} blocos · ${edges.length} conexões`}</small></div><div className={styles.headerActions}><Button variant="ghost" size="icon" disabled aria-label="Desfazer (em breve)" icon={<Undo2 size={17} />} /><Button variant="ghost" size="icon" disabled aria-label="Refazer (em breve)" icon={<Redo2 size={17} />} /><Button variant="secondary" icon={<Play size={16} />}>Testar</Button><Button onClick={save} icon={<Save size={16} />}>Salvar</Button></div></header>
+    <aside className={styles.library}><div className={styles.libraryTitle}><h2>Blocos</h2><button aria-label="Recolher biblioteca"><ChevronLeft size={17} /></button></div><p>Arraste para o canvas ou clique para adicionar</p><div className={styles.toolList}>{tools.map((tool) => { const Icon = tool.icon; return <button key={tool.label} draggable onDragStart={(event) => startDrag(event, tool)} onClick={() => addAtCenter(tool)} title={`Adicionar ${tool.label}`}><span className={styles[tool.tone]}><Icon size={18} /></span><div><strong>{tool.label}</strong><small>{tool.detail}</small></div><Plus size={15} /></button>; })}</div><div className={styles.tip}><MousePointer2 size={18} /><div><strong>Dica rápida</strong><p>Arraste pelas alças verdes para conectar dois blocos.</p></div></div></aside>
+    <section ref={canvasRef} className={styles.canvas} aria-label="Editor visual de fluxo" onDrop={drop} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }}><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={connect} fitView minZoom={0.4} maxZoom={1.5} deleteKeyCode={['Backspace', 'Delete']} onNodeClick={(_, node) => setSelectedId(node.id)} onPaneClick={() => setSelectedId(null)} onNodesDelete={(deleted) => { const ids = new Set(deleted.map((node) => node.id)); setEdges((current) => current.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target))); if (selectedId && ids.has(selectedId)) setSelectedId(null); }} defaultEdgeOptions={edgeDefaults} connectionLineStyle={{ stroke: '#12a17d', strokeWidth: 2 }}><Background color="#cbd8d3" gap={22} size={1} /><Controls showInteractive={false} /><MiniMap nodeColor="#0e8468" maskColor="rgb(245 248 247 / 75%)" /></ReactFlow></section>
+    <aside className={`${styles.properties} ${selected ? styles.visible : ''}`}>{selected ? <><div className={styles.propertiesTitle}><div><span>PROPRIEDADES DO BLOCO</span><h2>{selected.data.label}</h2></div><button onClick={() => setSelectedId(null)} aria-label="Fechar propriedades"><X size={18} /></button></div><label><span>Nome do bloco</span><input value={selected.data.detail} onChange={(event) => updateSelected('detail', event.target.value)} /></label><label><span>Conteúdo / instrução</span><textarea value={selected.data.content} onChange={(event) => updateSelected('content', event.target.value)} rows={5} /></label><div className={styles.variables}><span>Inserir variável</span><button onClick={() => updateSelected('content', `${selected.data.content} {nome_contato}`)}>{'{nome_contato}'}</button><button onClick={() => updateSelected('content', `${selected.data.content} {saudacao}`)}>{'{saudacao}'}</button></div><div className={styles.preview}><span>PRÉVIA DO CONTEÚDO</span><div><p>{selected.data.content || 'Digite um conteúdo para visualizar.'}</p><small>10:42 ✓✓</small></div></div><div className={styles.propertyActions}><Button variant="danger" onClick={deleteSelected}>Excluir bloco</Button><Button onClick={save} icon={<Send size={15} />}>Aplicar</Button></div></> : <div className={styles.noSelection}><MousePointer2 size={25} /><strong>Selecione um bloco</strong><p>Clique em um bloco para editar suas propriedades.</p></div>}</aside>
+  </main>;
+}
+
+export function FlowEditor() {
+  return <ReactFlowProvider><FlowEditorContent /></ReactFlowProvider>;
+}

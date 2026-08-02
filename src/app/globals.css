@@ -1,0 +1,40 @@
+@import '@xyflow/react/dist/style.css';
+
+:root {
+  --green-950: #073b32;
+  --green-900: #095044;
+  --green-800: #0b6b57;
+  --green-700: #0e8468;
+  --green-600: #12a17d;
+  --green-500: #21c797;
+  --green-100: #dff8ef;
+  --green-50: #f0fbf7;
+  --ink: #172521;
+  --muted: #64736e;
+  --line: #dfe7e4;
+  --surface: #ffffff;
+  --canvas: #f5f8f7;
+  --warning: #e69b30;
+  --danger: #d74d55;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 1px 2px rgb(7 59 50 / 5%), 0 6px 18px rgb(7 59 50 / 5%);
+  --shadow-lg: 0 20px 60px rgb(7 59 50 / 14%);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--canvas); }
+body { margin: 0; color: var(--ink); background: var(--canvas); font-family: Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.page-enter { animation: page-in .35s ease both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(5px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
