@@ -44,6 +44,6 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [ ] **INT-10 — Reconciliar tipos com OpenAPI**  
   Branch: `chore/openapi-contract` · Commit: `chore(api): reconcile types with openapi contract`  
   Bloqueio atual: backend indisponível em `localhost:3000` em 02/08/2026.
-- [ ] **INT-11 — Rodar revisão integrada**  
+- [x] **INT-11 — Rodar revisão integrada**  
   Branch: `test/integration-hardening` · Commit: `test: cover frontend integration boundaries`  
   Aceite: lint, tipos, testes, build e auditoria sem regressões.
