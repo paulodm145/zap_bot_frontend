@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "@xyflow/react": "latest",
     "lucide-react": "latest",
     "next": "latest",

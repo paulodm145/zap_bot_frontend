@@ -8,7 +8,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
   Branch: `main` · Commit: `chore: establish frontend visual baseline`
 - [x] **INT-01 — Planejar integração**  
   Branch: `docs/integration-task-plan` · Commit: `docs: plan frontend backend integration`
-- [ ] **INT-02 — Criar cliente HTTP e sessão**  
+- [x] **INT-02 — Criar cliente HTTP e sessão**  
   Branch: `feat/api-foundation` · Commit: `feat(api): add authenticated http client foundation`  
   Aceite: URL configurável, erro tipado, Bearer, cookie, refresh único e Query Provider.
 - [ ] **INT-03 — Adequar paginação da DataTable**  
