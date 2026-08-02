@@ -23,7 +23,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [x] **INT-05 — Integrar solicitação de recuperação**  
   Branch: `feat/password-recovery` · Commit: `feat(auth): integrate password recovery request`  
   Aceite: hook próprio, resposta 202 não enumerável e tratamento de 429.
-- [ ] **INT-06 — Criar redefinição de senha**  
+- [x] **INT-06 — Criar redefinição de senha**  
   Branch: `feat/password-reset` · Commit: `feat(auth): add password reset flow`  
   Aceite: token da URL somente em memória, política de senha e tratamento de 204/422.
 
