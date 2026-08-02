@@ -35,7 +35,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [x] **INT-08 — Integrar detalhe e salvamento de fluxo**  
   Branch: `feat/flow-editor-api` · Commit: `feat(flows): integrate editor load and save`  
   Aceite: hooks de detalhe/update, conversão grafo↔definição e bloqueio de salvamento concorrente.
-- [ ] **INT-09 — Integrar publicação e simulação**  
+- [x] **INT-09 — Integrar publicação e simulação**  
   Branch: `feat/flow-publish-simulate` · Commit: `feat(flows): integrate publish and simulation`  
   Aceite: hooks separados, erros 409/422 mapeados e estado de simulação preservado.
 
