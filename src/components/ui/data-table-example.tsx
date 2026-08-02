@@ -34,18 +34,18 @@ const columns: DataTableColumn<Contact>[] = [
 ];
 
 export function DataTableExample() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [skip, setSkip] = useState(0);
+  const [take, setTake] = useState(10);
   const [sort, setSort] = useState<DataTableSort>({ columnId: 'name', direction: 'asc' });
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
   const filtered = useMemo(() => contacts.filter((contact) => contact.name.toLowerCase().includes(query.toLowerCase())), [query]);
-  const pageData = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageData = filtered.slice(skip, skip + take);
 
-  function requestPage(next: { page: number; pageSize: number }) {
+  function requestPage(next: { skip: number; take: number }) {
     setLoading(true);
-    window.setTimeout(() => { setPage(next.page); setPageSize(next.pageSize); setLoading(false); }, 350);
+    window.setTimeout(() => { setSkip(next.skip); setTake(next.take); setLoading(false); }, 350);
   }
 
   return <DataTable
@@ -55,12 +55,12 @@ export function DataTableExample() {
     data={pageData}
     getRowId={(row) => row.id}
     color="green"
-    pagination={{ page, pageSize, total: filtered.length }}
+    pagination={{ skip, take, total: filtered.length }}
     onPaginationChange={requestPage}
     sort={sort}
     onSortChange={setSort}
     loading={loading}
-    toolbar={<><label className={styles.search}><Search size={15} /><span className="sr-only">Buscar contato</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Buscar contato..." /></label><Button variant="ghost" size="sm" icon={<SlidersHorizontal size={15} />}>Filtros</Button><Button variant="secondary" size="sm" icon={<Download size={15} />}>Exportar</Button><Button size="sm" icon={<Plus size={15} />}>Novo contato</Button></>}
+    toolbar={<><label className={styles.search}><Search size={15} /><span className="sr-only">Buscar contato</span><input value={query} onChange={(event) => { setQuery(event.target.value); setSkip(0); }} placeholder="Buscar contato..." /></label><Button variant="ghost" size="sm" icon={<SlidersHorizontal size={15} />}>Filtros</Button><Button variant="secondary" size="sm" icon={<Download size={15} />}>Exportar</Button><Button size="sm" icon={<Plus size={15} />}>Novo contato</Button></>}
     rowActions={(row) => <Button variant="ghost" size="icon" aria-label={`Ações de ${row.name}`} icon={<MoreHorizontal size={17} />} />}
   />;
 }

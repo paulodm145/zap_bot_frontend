@@ -26,12 +26,12 @@ O produto usa uma linguagem acolhedora, confiável e operacional. O verde remete
   data={response.items}
   getRowId={(row) => row.id}
   toolbar={<Button>Novo contato</Button>}
-  pagination={{ page, pageSize, total: response.total }}
-  onPaginationChange={({ page, pageSize }) => carregar({ page, pageSize })}
+  pagination={{ skip, take, total: response.total }}
+  onPaginationChange={({ skip, take }) => carregar({ skip, take })}
 />
 ```
 
-O backend deve retornar apenas os registros da página solicitada e o total geral. Ao alterar `pageSize`, a tabela solicita a página 1. Use `loading` durante a requisição e forneça `sort`/`onSortChange` quando o endpoint aceitar ordenação.
+O backend deve retornar `{ dados, total, skip, take }`. Ao alterar `take`, a tabela emite `skip: 0`. Use `loading` durante a requisição e forneça `sort`/`onSortChange` quando o endpoint aceitar ordenação.
 
 ## Padrões de interface
 

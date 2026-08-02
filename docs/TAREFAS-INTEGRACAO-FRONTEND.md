@@ -11,7 +11,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [x] **INT-02 — Criar cliente HTTP e sessão**  
   Branch: `feat/api-foundation` · Commit: `feat(api): add authenticated http client foundation`  
   Aceite: URL configurável, erro tipado, Bearer, cookie, refresh único e Query Provider.
-- [ ] **INT-03 — Adequar paginação da DataTable**  
+- [x] **INT-03 — Adequar paginação da DataTable**  
   Branch: `feat/backend-pagination` · Commit: `feat(table): support backend skip take pagination`  
   Aceite: componente recebe `{ skip, take, total }` e emite novos `skip`/`take`.
 

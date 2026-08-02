@@ -19,8 +19,8 @@ export type DataTableColumn<T> = {
 };
 
 export type DataTablePagination = {
-  page: number;
-  pageSize: number;
+  skip: number;
+  take: number;
   total: number;
 };
 
@@ -38,7 +38,7 @@ export type DataTableProps<T> = {
   toolbar?: ReactNode;
   color?: DataTableColor;
   pagination: DataTablePagination;
-  onPaginationChange: (pagination: Pick<DataTablePagination, 'page' | 'pageSize'>) => void;
+  onPaginationChange: (pagination: Pick<DataTablePagination, 'skip' | 'take'>) => void;
   pageSizeOptions?: number[];
   sort?: DataTableSort;
   onSortChange?: (sort: DataTableSort) => void;
@@ -76,15 +76,16 @@ export function DataTable<T>({
   className = '',
 }: DataTableProps<T>) {
   const pageSizeId = useId();
-  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.pageSize));
-  const safePage = Math.min(Math.max(1, pagination.page), totalPages);
-  const firstItem = pagination.total === 0 ? 0 : (safePage - 1) * pagination.pageSize + 1;
-  const lastItem = Math.min(safePage * pagination.pageSize, pagination.total);
+  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.take));
+  const requestedPage = Math.floor(pagination.skip / pagination.take) + 1;
+  const safePage = Math.min(Math.max(1, requestedPage), totalPages);
+  const firstItem = pagination.total === 0 ? 0 : pagination.skip + 1;
+  const lastItem = Math.min(pagination.skip + pagination.take, pagination.total);
   const pages = getPages(safePage, totalPages);
 
   function changePage(page: number) {
     if (page !== safePage && page >= 1 && page <= totalPages) {
-      onPaginationChange({ page, pageSize: pagination.pageSize });
+      onPaginationChange({ skip: (page - 1) * pagination.take, take: pagination.take });
     }
   }
 
@@ -112,7 +113,7 @@ export function DataTable<T>({
             </th>;
           })}{rowActions && <th className={styles.actionsColumn}>{actionsHeader}</th>}</tr></thead>
           <tbody>
-            {loading ? Array.from({ length: Math.min(pagination.pageSize, 6) }, (_, rowIndex) => <tr key={`skeleton-${rowIndex}`} className={styles.skeletonRow}>{columns.map((column) => <td key={column.id}><span /></td>)}{rowActions && <td><span /></td>}</tr>) : data.map((row) => <tr key={getRowId(row)}>{columns.map((column) => <td key={column.id} className={`${styles[column.align ?? 'left']} ${column.hideOnMobile ? styles.hideOnMobile : ''}`}>{column.render ? column.render(row) : column.accessor ? String(row[column.accessor] ?? '') : null}</td>)}{rowActions && <td className={styles.rowActions}>{rowActions(row)}</td>}</tr>)}
+            {loading ? Array.from({ length: Math.min(pagination.take, 6) }, (_, rowIndex) => <tr key={`skeleton-${rowIndex}`} className={styles.skeletonRow}>{columns.map((column) => <td key={column.id}><span /></td>)}{rowActions && <td><span /></td>}</tr>) : data.map((row) => <tr key={getRowId(row)}>{columns.map((column) => <td key={column.id} className={`${styles[column.align ?? 'left']} ${column.hideOnMobile ? styles.hideOnMobile : ''}`}>{column.render ? column.render(row) : column.accessor ? String(row[column.accessor] ?? '') : null}</td>)}{rowActions && <td className={styles.rowActions}>{rowActions(row)}</td>}</tr>)}
           </tbody>
         </table>
         {!loading && data.length === 0 && <div className={styles.empty}><span><Inbox size={24} /></span><strong>{emptyTitle}</strong><p>{emptyDescription}</p></div>}
@@ -120,7 +121,7 @@ export function DataTable<T>({
 
       <footer className={styles.footer}>
         <div className={styles.resultCount}>Exibindo <strong>{firstItem}–{lastItem}</strong> de <strong>{pagination.total}</strong></div>
-        <div className={styles.pageSize}><label htmlFor={pageSizeId}>Itens por página</label><select id={pageSizeId} value={pagination.pageSize} onChange={(event) => onPaginationChange({ page: 1, pageSize: Number(event.target.value) })}>{pageSizeOptions.map((size) => <option key={size} value={size}>{size}</option>)}</select></div>
+        <div className={styles.pageSize}><label htmlFor={pageSizeId}>Itens por página</label><select id={pageSizeId} value={pagination.take} onChange={(event) => onPaginationChange({ skip: 0, take: Number(event.target.value) })}>{pageSizeOptions.map((size) => <option key={size} value={size}>{size}</option>)}</select></div>
         <nav className={styles.pagination} aria-label="Paginação da tabela">
           <button type="button" onClick={() => changePage(1)} disabled={safePage === 1} aria-label="Primeira página"><ChevronsLeft size={16} /></button>
           <button type="button" onClick={() => changePage(safePage - 1)} disabled={safePage === 1} aria-label="Página anterior"><ChevronLeft size={16} /></button>
