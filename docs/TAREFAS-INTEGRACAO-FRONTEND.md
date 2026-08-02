@@ -29,7 +29,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 
 ## Fluxos
 
-- [ ] **INT-07 — Integrar lista e criação de fluxos**  
+- [x] **INT-07 — Integrar lista e criação de fluxos**  
   Branch: `feat/flows-list` · Commit: `feat(flows): integrate paginated flow listing`  
   Aceite: hooks de listagem/criação, busca/estado, DataTable e navegação pelo `public_id`.
 - [ ] **INT-08 — Integrar detalhe e salvamento de fluxo**  
