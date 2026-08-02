@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Bell, Bot, ChevronDown, Menu, MessagesSquare, Settings, Users, Workflow, X } from 'lucide-react';
+import { BarChart3, Bell, Bot, ChevronDown, LogOut, Menu, MessagesSquare, Settings, Users, Workflow, X } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
 import styles from './app-shell.module.css';
+import { useLogout } from '@/hooks/auth/use-logout';
 
 const nav = [
   { href: '/dashboard', label: 'Visão geral', icon: BarChart3 },
@@ -19,6 +20,7 @@ const nav = [
 export function AppShell({ children, title, subtitle, actions }: { children: React.ReactNode; title: string; subtitle?: string; actions?: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const logout = useLogout();
   return (
     <div className={styles.shell}>
       {open && <button className={styles.overlay} onClick={() => setOpen(false)} aria-label="Fechar menu" />}
@@ -26,7 +28,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         <div className={styles.logoRow}><Logo /><button className={styles.close} onClick={() => setOpen(false)}><X size={20} /></button></div>
         <div className={styles.workspace}><span>EA</span><div><small>Workspace</small><strong>Empresa Aurora</strong></div><ChevronDown size={15} /></div>
         <nav aria-label="Navegação principal">{nav.map((item) => { const Icon = item.icon; const active = pathname.startsWith(item.href) && item.href !== '#'; return <Link key={item.label} href={item.href} className={active ? styles.active : ''} onClick={() => setOpen(false)}><Icon size={19} /><span>{item.label}</span>{item.label === 'Atendimento' && <b>8</b>}</Link>; })}</nav>
-        <div className={styles.sidebarBottom}><Link href="#"><Settings size={19} />Configurações</Link><div className={styles.profile}><span>PR</span><div><strong>Paulo Roberto</strong><small>Administrador</small></div><ChevronDown size={15} /></div></div>
+        <div className={styles.sidebarBottom}><Link href="#"><Settings size={19} />Configurações</Link><button className={styles.logout} onClick={() => logout.mutate()} disabled={logout.isPending}><LogOut size={19} />{logout.isPending ? 'Saindo...' : 'Sair'}</button><div className={styles.profile}><span>PR</span><div><strong>Paulo Roberto</strong><small>Administrador</small></div><ChevronDown size={15} /></div></div>
       </aside>
       <div className={styles.content}>
         <header className={styles.topbar}><button className={styles.menu} onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu size={22} /></button><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div><div className={styles.actions}>{actions}<Button variant="ghost" size="icon" aria-label="Notificações" icon={<Bell size={19} />} /><span className={styles.avatar}>PR</span></div></header>

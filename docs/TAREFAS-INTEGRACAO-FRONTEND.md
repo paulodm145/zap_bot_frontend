@@ -17,7 +17,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 
 ## Jornadas públicas
 
-- [ ] **INT-04 — Integrar login tenant**  
+- [x] **INT-04 — Integrar login tenant**  
   Branch: `feat/tenant-auth` · Commit: `feat(auth): integrate tenant login and session`  
   Aceite: hook próprio, estados de envio/erro, sessão em memória e redirecionamento.
 - [ ] **INT-05 — Integrar solicitação de recuperação**  
