@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import styles from './auth.module.css';
 import { useLogin } from '@/hooks/auth/use-login';
 import { isApiError } from '@/lib/api/api-error';
+import { usePasswordRecovery } from '@/hooks/auth/use-password-recovery';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -44,10 +45,22 @@ export function LoginForm() {
 
 export function RecoveryForm() {
   const [sent, setSent] = useState(false);
+  const [email, setEmail] = useState('');
+  const recovery = usePasswordRecovery();
+  async function submitRecovery(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await recovery.mutateAsync(email);
+      setSent(true);
+    } catch {
+      // O erro é apresentado sem alterar o e-mail digitado.
+    }
+  }
+  const recoveryError = recovery.error ? (isApiError(recovery.error) && recovery.error.status === 429 ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.' : 'Não foi possível enviar as instruções agora. Tente novamente.') : null;
   return (
     <div className={`${styles.formCard} page-enter`}>
       <header><span className={styles.step}>RECUPERAÇÃO DE ACESSO</span><h2>{sent ? 'Confira seu e-mail' : 'Recupere sua senha'}</h2><p>{sent ? 'Se o endereço estiver cadastrado, você receberá as instruções em instantes.' : 'Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.'}</p></header>
-      {!sent ? <form onSubmit={(event) => { event.preventDefault(); setSent(true); }} className={styles.form}><Input label="E-mail de acesso" name="email" type="email" placeholder="voce@empresa.com.br" required icon={<Mail size={17} />} /><Button type="submit">Enviar instruções<ArrowRight size={17} /></Button></form> : <div className={styles.sentIcon}><Mail size={28} /></div>}
+      {!sent ? <form onSubmit={submitRecovery} className={styles.form}><Input label="E-mail de acesso" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com.br" required disabled={recovery.isPending} icon={<Mail size={17} />} />{recoveryError && <div className={styles.formError} role="alert">{recoveryError}</div>}<Button type="submit" disabled={recovery.isPending}>{recovery.isPending ? 'Enviando...' : 'Enviar instruções'}<ArrowRight size={17} /></Button></form> : <div className={styles.sentIcon}><Mail size={28} /></div>}
       <Link className={styles.backLink} href="/login">← Voltar para o login</Link>
     </div>
   );

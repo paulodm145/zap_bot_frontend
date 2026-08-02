@@ -20,7 +20,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [x] **INT-04 — Integrar login tenant**  
   Branch: `feat/tenant-auth` · Commit: `feat(auth): integrate tenant login and session`  
   Aceite: hook próprio, estados de envio/erro, sessão em memória e redirecionamento.
-- [ ] **INT-05 — Integrar solicitação de recuperação**  
+- [x] **INT-05 — Integrar solicitação de recuperação**  
   Branch: `feat/password-recovery` · Commit: `feat(auth): integrate password recovery request`  
   Aceite: hook próprio, resposta 202 não enumerável e tratamento de 429.
 - [ ] **INT-06 — Criar redefinição de senha**  
