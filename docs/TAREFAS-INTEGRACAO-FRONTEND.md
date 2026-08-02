@@ -32,7 +32,7 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 - [x] **INT-07 — Integrar lista e criação de fluxos**  
   Branch: `feat/flows-list` · Commit: `feat(flows): integrate paginated flow listing`  
   Aceite: hooks de listagem/criação, busca/estado, DataTable e navegação pelo `public_id`.
-- [ ] **INT-08 — Integrar detalhe e salvamento de fluxo**  
+- [x] **INT-08 — Integrar detalhe e salvamento de fluxo**  
   Branch: `feat/flow-editor-api` · Commit: `feat(flows): integrate editor load and save`  
   Aceite: hooks de detalhe/update, conversão grafo↔definição e bloqueio de salvamento concorrente.
 - [ ] **INT-09 — Integrar publicação e simulação**  
