@@ -32,6 +32,7 @@ import { useSaveFlow } from '@/hooks/flows/use-save-flow';
 import { usePublishFlow } from '@/hooks/flows/use-publish-flow';
 import { useSimulateFlow } from '@/hooks/flows/use-simulate-flow';
 import { isApiError } from '@/lib/api/api-error';
+import { AuthGuard } from '@/components/auth/auth-guard';
 
 type FlowData = FlowNodeData;
 type Tool = { label: string; detail: string; icon: typeof MessageSquareText; tone: string; content: string };
@@ -156,10 +157,14 @@ function FlowEditorContent({ flowId, flowName, initialNodes, initialEdges }: { f
   </main>;
 }
 
-export function FlowEditor({ flowId }: { flowId?: string }) {
+function AuthenticatedFlowEditor({ flowId }: { flowId?: string }) {
   const detail = useFlowDetail(flowId);
   if (flowId && detail.isLoading) return <main className={styles.editorState}>Carregando fluxo...</main>;
   if (flowId && detail.error) return <main className={styles.editorState}><strong>Não foi possível abrir o fluxo.</strong><p>{isApiError(detail.error) ? detail.error.message : 'Verifique sua conexão e tente novamente.'}</p><Link href="/fluxos">Voltar para meus fluxos</Link></main>;
   const graph = detail.data ? definitionToGraph(detail.data.definicao) : { nodes: prototypeNodes, edges: prototypeEdges };
   return <ReactFlowProvider><FlowEditorContent key={detail.data?.updated_at ?? 'prototype'} flowId={flowId} flowName={detail.data?.nome ?? 'Atendimento principal'} initialNodes={graph.nodes} initialEdges={graph.edges} /></ReactFlowProvider>;
+}
+
+export function FlowEditor({ flowId }: { flowId?: string }) {
+  return <AuthGuard><AuthenticatedFlowEditor flowId={flowId} /></AuthGuard>;
 }

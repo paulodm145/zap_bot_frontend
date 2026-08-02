@@ -41,6 +41,10 @@ Cada tarefa deve partir da `main`, terminar com os checks verdes e retornar por 
 
 ## Fechamento
 
+- [x] **INT-12 — Proteger rotas autenticadas**  
+  Branch: `fix/protected-routes` · Commit: `fix(auth): redirect anonymous users from protected routes`  
+  Aceite: dashboard, listagens e editor não renderizam sem sessão em memória.
+
 - [ ] **INT-10 — Reconciliar tipos com OpenAPI**  
   Branch: `chore/openapi-contract` · Commit: `chore(api): reconcile types with openapi contract`  
   Bloqueio atual: backend indisponível em `localhost:3000` em 02/08/2026.

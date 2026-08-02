@@ -8,6 +8,7 @@ import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
 import styles from './app-shell.module.css';
 import { useLogout } from '@/hooks/auth/use-logout';
+import { AuthGuard } from '@/components/auth/auth-guard';
 
 const nav = [
   { href: '/dashboard', label: 'Visão geral', icon: BarChart3 },
@@ -22,6 +23,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
   const [open, setOpen] = useState(false);
   const logout = useLogout();
   return (
+    <AuthGuard>
     <div className={styles.shell}>
       {open && <button className={styles.overlay} onClick={() => setOpen(false)} aria-label="Fechar menu" />}
       <aside className={`${styles.sidebar} ${open ? styles.open : ''}`}>
@@ -35,5 +37,6 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         <main className={`${styles.main} page-enter`}>{children}</main>
       </div>
     </div>
+    </AuthGuard>
   );
 }
