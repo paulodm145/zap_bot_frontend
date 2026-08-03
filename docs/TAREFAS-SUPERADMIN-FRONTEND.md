@@ -7,7 +7,7 @@ O painel interno usa sessão e token exclusivos. Nenhum hook interno pode usar r
 - [x] **SA-01 — Integrar autenticação e TOTP**  
   Branch: `feat/superadmin-auth` · Commit: `feat(superadmin): add isolated login and totp flow`  
   Aceite: login, configuração/validação TOTP, sessão em memória, guard e tratamento de 401/429.
-- [ ] **SA-02 — Criar shell e visão geral**  
+- [x] **SA-02 — Criar shell e visão geral**  
   Branch: `feat/superadmin-dashboard` · Commit: `feat(superadmin): add internal dashboard shell`  
   Aceite: navegação própria, saúde da sessão e indicadores sem depender do painel tenant.
 - [ ] **SA-03 — Integrar listagem de tenants**  
