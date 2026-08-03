@@ -22,7 +22,7 @@ O painel interno usa sessão e token exclusivos. Nenhum hook interno pode usar r
 - [x] **SA-05 — Integrar detalhe e ações sensíveis**  
   Branch: `feat/superadmin-tenant-detail` · Commit: `feat(superadmin): add tenant detail and sensitive actions`  
   Aceite: detalhe, usuários, assinaturas, confirmação com motivo, status e plano.
-- [ ] **SA-06 — Validar módulo interno**  
+- [x] **SA-06 — Validar módulo interno**
   Branch: `test/superadmin-hardening` · Commit: `test(superadmin): cover internal session boundaries`  
   Aceite: token isolado, nenhum refresh tenant, lint, tipos, testes e build.
 

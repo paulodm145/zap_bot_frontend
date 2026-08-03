@@ -5,6 +5,15 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: {
     environment: 'node',
-    coverage: { provider: 'v8', reporter: ['text', 'json-summary'], include: ['src/features/flows/flow-graph.ts', 'src/lib/api/api-error.ts'] },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: [
+        'src/features/flows/flow-graph.ts',
+        'src/lib/api/api-error.ts',
+        'src/lib/api/internal-api-client.ts',
+        'src/lib/internal-auth/internal-session-store.ts',
+      ],
+    },
   },
 });
