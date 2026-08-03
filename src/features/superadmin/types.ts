@@ -28,3 +28,8 @@ export type ProvisionTenantInput = {
   planoId: string;
   administrador: { nome: string; email: string; senha: string };
 };
+
+export type InternalTenantUser = { public_id: string; nome: string; email: string; papel?: string; ativo?: boolean; created_at?: string };
+export type InternalTenantSubscription = { public_id: string; status: string; tipo?: string; plano?: { public_id?: string; nome?: string }; created_at: string; cancelado_at?: string | null };
+export type InternalTenantDetail = InternalTenantSummary & { mensagem_falha?: string | null; banco_nome?: string | null };
+export type InternalTenantDetailResponse = { tenant: InternalTenantDetail; usuarios: InternalTenantUser[]; assinaturas: InternalTenantSubscription[] };

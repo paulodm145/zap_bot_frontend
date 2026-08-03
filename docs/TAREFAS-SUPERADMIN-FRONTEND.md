@@ -16,7 +16,7 @@ O painel interno usa sessão e token exclusivos. Nenhum hook interno pode usar r
 - [x] **SA-04 — Integrar provisionamento manual**  
   Branch: `feat/superadmin-tenant-create` · Commit: `feat(superadmin): add idempotent tenant provisioning`  
   Aceite: UUID por tentativa lógica, formulário validado, senha inicial e resposta 202.
-- [ ] **SA-05 — Integrar detalhe e ações sensíveis**  
+- [x] **SA-05 — Integrar detalhe e ações sensíveis**  
   Branch: `feat/superadmin-tenant-detail` · Commit: `feat(superadmin): add tenant detail and sensitive actions`  
   Aceite: detalhe, usuários, assinaturas, confirmação com motivo, status e plano.
 - [ ] **SA-06 — Validar módulo interno**  
