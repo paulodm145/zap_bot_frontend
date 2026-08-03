@@ -10,6 +10,9 @@ O painel interno usa sessão e token exclusivos. Nenhum hook interno pode usar r
 - [x] **SA-02 — Criar shell e visão geral**  
   Branch: `feat/superadmin-dashboard` · Commit: `feat(superadmin): add internal dashboard shell`  
   Aceite: navegação própria, saúde da sessão e indicadores sem depender do painel tenant.
+- [x] **SA-02B — Criar diagnóstico de saúde**  
+  Branch: `feat/superadmin-health` · Commit: `feat(superadmin): add platform health diagnostics`  
+  Aceite: rota dedicada, validação da sessão, prontidão e dependências sem polling contínuo.
 - [x] **SA-03 — Integrar listagem de tenants**  
   Branch: `feat/superadmin-tenants-list` · Commit: `feat(superadmin): add paginated tenant management`  
   Aceite: hook, busca, status, plano, ordenação e DataTable `skip`/`take`.

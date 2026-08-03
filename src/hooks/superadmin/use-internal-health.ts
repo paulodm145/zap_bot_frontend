@@ -10,3 +10,12 @@ export function useInternalHealth() {
     retry: false,
   });
 }
+
+export type PlatformReadiness = { status: string; dependencias: Array<{ nome: string; disponivel: boolean }> };
+export function usePlatformReadiness() {
+  return useQuery({
+    queryKey: ['superadmin', 'readiness'],
+    queryFn: ({ signal }) => internalApiRequest<PlatformReadiness>('/prontidao', { signal }, false),
+    retry: false,
+  });
+}
