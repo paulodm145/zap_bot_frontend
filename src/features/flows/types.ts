@@ -19,4 +19,7 @@ export type FlowDefinition = {
 
 export type FlowDetail = FlowSummary & {
   definicao: FlowDefinition;
+  versoes?: FlowVersion[];
 };
+
+export type FlowVersion = { public_id: string; versao: number; definicao: FlowDefinition; created_at: string };

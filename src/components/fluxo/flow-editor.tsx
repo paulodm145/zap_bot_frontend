@@ -20,7 +20,7 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import { Bot, ChevronLeft, GitBranch, MessageSquareText, MousePointer2, Play, Plus, Redo2, Save, Send, Trash2, Undo2, Users, Webhook, X } from 'lucide-react';
+import { ChevronLeft, GitBranch, MessageSquareText, MousePointer2, Play, Plus, Redo2, Save, Send, TextCursorInput, Trash2, Undo2, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 type FlowData = FlowNodeData;
 type Tool = { label: string; detail: string; icon: typeof MessageSquareText; tone: string; content: string };
 
-const iconMap = { message: MessageSquareText, condition: GitBranch, ai: Bot, http: Webhook, team: Users };
+const iconMap = { message: MessageSquareText, capture: TextCursorInput, condition: GitBranch, team: Users };
 const edgeDefaults = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
 
 function FlowNode({ id, data, selected }: NodeProps<Node<FlowData>>) {
@@ -50,7 +50,7 @@ const nodeTypes = { flowNode: FlowNode };
 const prototypeNodes: Node<FlowData>[] = [
   { id: 'no_1', type: 'flowNode', position: { x: 310, y: 40 }, data: { label: 'Mensagem', detail: 'Boas-vindas', kind: 'message', icon: 'message', content: 'Olá! Bem-vindo à Aurora 👋\nComo podemos ajudar você hoje?' } },
   { id: 'no_2', type: 'flowNode', position: { x: 310, y: 180 }, data: { label: 'Condição', detail: 'Identificar intenção', kind: 'condition', icon: 'condition', content: 'Escolha uma opção para continuar.' } },
-  { id: 'no_3', type: 'flowNode', position: { x: 90, y: 345 }, data: { label: 'Assistente IA', detail: 'Dúvidas sobre produtos', kind: 'ai', icon: 'ai', content: 'Responda às dúvidas usando o catálogo de produtos.' } },
+  { id: 'no_3', type: 'flowNode', position: { x: 90, y: 345 }, data: { label: 'Capturar resposta', detail: 'Identificar solicitação', kind: 'capture', icon: 'capture', content: 'Digite uma opção para continuar.' } },
   { id: 'no_4', type: 'flowNode', position: { x: 530, y: 345 }, data: { label: 'Direcionar setor', detail: 'Equipe comercial', kind: 'team', icon: 'team', content: 'Transferir esta conversa para o setor Comercial.' } },
 ];
 const prototypeEdges: Edge[] = [
@@ -60,9 +60,8 @@ const prototypeEdges: Edge[] = [
 ];
 const tools: Tool[] = [
   { label: 'Mensagem', detail: 'Envie texto ou mídia', icon: MessageSquareText, tone: 'message', content: 'Digite a mensagem que será enviada.' },
+  { label: 'Capturar resposta', detail: 'Aguarde uma resposta', icon: TextCursorInput, tone: 'capture', content: 'Digite uma resposta para continuar.' },
   { label: 'Condição', detail: 'Crie caminhos lógicos', icon: GitBranch, tone: 'condition', content: 'Configure as opções e condições de saída.' },
-  { label: 'Assistente IA', detail: 'Responda com inteligência', icon: Bot, tone: 'ai', content: 'Descreva como o assistente deve responder.' },
-  { label: 'Integração HTTP', detail: 'Consulte outros sistemas', icon: Webhook, tone: 'http', content: 'Configure a requisição HTTP.' },
   { label: 'Direcionar setor', detail: 'Transfira para uma equipe', icon: Users, tone: 'team', content: 'Escolha o setor de destino.' },
 ];
 

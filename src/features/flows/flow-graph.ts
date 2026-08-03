@@ -7,11 +7,11 @@ export type FlowGraph = { nodes: Node<FlowNodeData>[]; edges: Edge[] };
 const edgeStyle = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
 
 function kindFromType(type: unknown) {
-  if (type === 'mensagem' || type === 'captura_resposta') return 'message';
+  if (type === 'mensagem') return 'message';
+  if (type === 'captura_resposta') return 'capture';
   if (type === 'condicao') return 'condition';
   if (type === 'direcionar_setor') return 'team';
-  if (type === 'integracao_http') return 'http';
-  return 'ai';
+  return 'message';
 }
 
 export function definitionToGraph(definition: FlowDefinition): FlowGraph {
@@ -43,8 +43,8 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
       const outgoing = edges.filter((edge) => edge.source === node.id);
       if (node.data.kind === 'condition') return { id: node.id, tipo: 'condicao', dados: { regras: outgoing.filter((edge) => edge.label !== 'Padrão').map((edge, index) => ({ se: String(edge.label ?? `opcao == "${index + 1}"`), entao: edge.target })), ...(outgoing.find((edge) => edge.label === 'Padrão') ? { padrao: outgoing.find((edge) => edge.label === 'Padrão')?.target } : {}) } };
       if (node.data.kind === 'team') return { id: node.id, tipo: 'direcionar_setor', dados: { setorId: node.data.content } };
-      const tipo = node.data.kind === 'http' ? 'integracao_http' : node.data.kind === 'ai' ? 'ia' : 'mensagem';
-      return { id: node.id, tipo, dados: tipo === 'mensagem' ? { texto: node.data.content } : { configuracao: node.data.content }, ...(outgoing[0] ? { proximo: outgoing[0].target } : {}) };
+      const tipo = node.data.kind === 'capture' ? 'captura_resposta' : 'mensagem';
+      return { id: node.id, tipo, dados: tipo === 'mensagem' ? { texto: node.data.content } : { mensagem: node.data.content }, ...(outgoing[0] ? { proximo: outgoing[0].target } : {}) };
     }),
   };
 }
