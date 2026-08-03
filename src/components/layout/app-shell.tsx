@@ -12,15 +12,17 @@ import { useLogout } from '@/hooks/auth/use-logout';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { useSession } from '@/hooks/auth/use-session';
 import { sessionStore } from '@/lib/auth/session-store';
+import { useMe } from '@/hooks/tenant/use-me';
+import type { Role } from '@/features/tenant/types';
 
-const nav = [
+const nav: Array<{ href: string; label: string; icon: typeof BarChart3; roles?: Role[] }> = [
   { href: '/dashboard', label: 'Visão geral', icon: BarChart3 },
   { href: '/fluxos', label: 'Meus fluxos', icon: Workflow },
   { href: '/atendimento', label: 'Atendimento', icon: MessagesSquare },
   { href: '/setores', label: 'Setores', icon: Building2 },
-  { href: '/usuarios', label: 'Usuários', icon: Users },
+  { href: '/usuarios', label: 'Usuários', icon: Users, roles: ['ADMIN_TENANT', 'GESTOR'] },
   { href: '/empresa', label: 'Dados da empresa', icon: Building2 },
-  { href: '/contas-whatsapp', label: 'WhatsApp', icon: Settings },
+  { href: '/contas-whatsapp', label: 'WhatsApp', icon: Settings, roles: ['ADMIN_TENANT'] },
 ];
 
 export function AppShell({ children, title, subtitle, actions }: { children: React.ReactNode; title: string; subtitle?: string; actions?: React.ReactNode }) {
@@ -28,6 +30,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
   const router = useRouter();
   const queryClient = useQueryClient();
   const session = useSession();
+  const me = useMe();
   const [open, setOpen] = useState(false);
   const logout = useLogout();
   return (
@@ -37,7 +40,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
       <aside className={`${styles.sidebar} ${open ? styles.open : ''}`}>
         <div className={styles.logoRow}><Logo /><button className={styles.close} onClick={() => setOpen(false)}><X size={20} /></button></div>
         <div className={styles.workspace}><span>{session.user?.nome.slice(0,2).toUpperCase() ?? 'EA'}</span><div><small>Workspace</small><strong>{session.impersonation?.tenantName ?? 'Meu tenant'}</strong></div><ChevronDown size={15} /></div>
-        <nav aria-label="Navegação principal">{nav.map((item) => { const Icon = item.icon; const active = pathname.startsWith(item.href) && item.href !== '#'; return <Link key={item.label} href={item.href} className={active ? styles.active : ''} onClick={() => setOpen(false)}><Icon size={19} /><span>{item.label}</span>{item.label === 'Atendimento' && <b>8</b>}</Link>; })}</nav>
+        <nav aria-label="Navegação principal">{nav.filter((item) => !item.roles || (me.data && item.roles.includes(me.data.papel))).map((item) => { const Icon = item.icon; const active = pathname.startsWith(item.href); return <Link key={item.label} href={item.href} className={active ? styles.active : ''} onClick={() => setOpen(false)}><Icon size={19} /><span>{item.label}</span></Link>; })}</nav>
         <div className={styles.sidebarBottom}><Link href="/perfil"><Settings size={19} />Meu perfil</Link><button className={styles.logout} onClick={() => logout.mutate()} disabled={logout.isPending}><LogOut size={19} />{logout.isPending ? 'Saindo...' : 'Sair'}</button><div className={styles.profile}><span>{session.user?.nome.slice(0,2).toUpperCase() ?? 'US'}</span><div><strong>{session.user?.nome ?? 'Usuário'}</strong><small>Conta do tenant</small></div><ChevronDown size={15} /></div></div>
       </aside>
       <div className={styles.content}>
