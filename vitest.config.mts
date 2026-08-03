@@ -11,7 +11,9 @@ export default defineConfig({
       include: [
         'src/features/flows/flow-graph.ts',
         'src/lib/api/api-error.ts',
+        'src/lib/api/api-client.ts',
         'src/lib/api/internal-api-client.ts',
+        'src/lib/auth/session-store.ts',
         'src/lib/internal-auth/internal-session-store.ts',
       ],
     },

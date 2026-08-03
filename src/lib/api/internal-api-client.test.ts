@@ -38,4 +38,13 @@ describe('internalApiRequest', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(internalSessionStore.getSnapshot().status).toBe('anonymous');
   });
+
+  it('returns undefined for a successful 204 deletion response', async () => {
+    internalSessionStore.authenticate('internal-token');
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(internalApiRequest<void>('/interno/tenants/tenant-1', { method: 'DELETE' })).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 });

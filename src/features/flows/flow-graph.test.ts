@@ -31,4 +31,12 @@ describe('flow graph contract conversion', () => {
       { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' } },
     ] });
   });
+
+  it('round-trips the supported response capture node', () => {
+    const graph = definitionToGraph({ schemaVersao: 1, noInicial: 'captura', nos: [
+      { id: 'captura', tipo: 'captura_resposta', dados: { mensagem: 'Qual opção?' } },
+    ] });
+    expect(graph.nodes[0].data.kind).toBe('capture');
+    expect(graphToDefinition(graph.nodes, graph.edges).nos[0]).toEqual({ id: 'captura', tipo: 'captura_resposta', dados: { mensagem: 'Qual opção?' } });
+  });
 });
