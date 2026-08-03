@@ -21,3 +21,10 @@ export type InternalTenantListParams = {
   orderBy?: 'nome' | 'status' | 'created_at' | 'updated_at';
   order?: 'asc' | 'desc';
 };
+
+export type ProvisionTenantInput = {
+  chaveIdempotencia: string;
+  nome: string;
+  planoId: string;
+  administrador: { nome: string; email: string; senha: string };
+};

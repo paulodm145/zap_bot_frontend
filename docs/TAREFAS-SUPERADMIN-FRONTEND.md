@@ -13,7 +13,7 @@ O painel interno usa sessão e token exclusivos. Nenhum hook interno pode usar r
 - [x] **SA-03 — Integrar listagem de tenants**  
   Branch: `feat/superadmin-tenants-list` · Commit: `feat(superadmin): add paginated tenant management`  
   Aceite: hook, busca, status, plano, ordenação e DataTable `skip`/`take`.
-- [ ] **SA-04 — Integrar provisionamento manual**  
+- [x] **SA-04 — Integrar provisionamento manual**  
   Branch: `feat/superadmin-tenant-create` · Commit: `feat(superadmin): add idempotent tenant provisioning`  
   Aceite: UUID por tentativa lógica, formulário validado, senha inicial e resposta 202.
 - [ ] **SA-05 — Integrar detalhe e ações sensíveis**  
