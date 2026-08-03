@@ -9,3 +9,4 @@
 - [x] **TEN-07 — Validação final** — `test/tenant-modules` — `test(tenant): validate operational modules`
 - [x] **TEN-08 — Padronizar grids, modais e dados empresariais** — `fix/tenant-crud-design` — `fix(tenant): standardize crud experience`
 - [x] **TEN-09 — Corrigir overlay dos modais** — `fix/tenant-modal-overlay` — `fix(tenant): render crud modals in viewport portal`
+- [x] **TEN-10 — Corrigir validação da listagem de setores** — `fix/sector-validation-contract` — `fix(sectors): omit empty search parameter`
