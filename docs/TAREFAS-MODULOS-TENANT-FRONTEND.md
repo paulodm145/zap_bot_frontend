@@ -11,3 +11,4 @@
 - [x] **TEN-09 — Corrigir overlay dos modais** — `fix/tenant-modal-overlay` — `fix(tenant): render crud modals in viewport portal`
 - [x] **TEN-10 — Corrigir validação da listagem de setores** — `fix/sector-validation-contract` — `fix(sectors): omit empty search parameter`
 - [x] **TEN-11 — Adicionar edição e toggle de usuários** — `feat/tenant-user-edit-toggle` — `feat(users): add edit flow and status toggle`
+- [x] **TEN-12 — Melhorar legibilidade e feedback** — `fix/tenant-readability-feedback` — `fix(ui): improve tables forms and error feedback`

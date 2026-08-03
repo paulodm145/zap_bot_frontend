@@ -50,6 +50,9 @@
 .close { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; color: #66736e; border: 0; border-radius: 6px; background: transparent; }
 .close:hover:not(:disabled) { color: var(--ink); background: #f1f4f3; }
 .body { padding: 20px; overflow-y: auto; }
+.body label { font-size: 13px; line-height: 1.35; }
+.body input, .body select, .body textarea { font-size: 14px; }
+.body small { color: var(--muted); font-size: 11px; line-height: 1.4; }
 .footer { padding: 14px 20px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); background: #f8faf9; }
 
 @keyframes backdrop-in { from { opacity: 0; } }
