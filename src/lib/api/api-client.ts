@@ -41,10 +41,12 @@ async function refreshAccessToken() {
 
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { auth = true, retryAuth = true, headers, ...requestOptions } = options;
-  const token = sessionStore.getSnapshot().accessToken;
+  const session = sessionStore.getSnapshot();
+  const token = session.accessToken;
+  const impersonated = Boolean(session.impersonation);
   const response = await fetch(`${API_URL}${path.startsWith('/') ? path : `/${path}`}`, {
     ...requestOptions,
-    credentials: 'include',
+    credentials: impersonated ? 'omit' : 'include',
     headers: {
       Accept: 'application/json',
       ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
@@ -53,12 +55,13 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
     },
   });
 
-  if (response.status === 401 && auth && retryAuth) {
+  if (response.status === 401 && auth && retryAuth && !impersonated) {
     await refreshAccessToken();
     return apiRequest<T>(path, { ...options, retryAuth: false });
   }
 
   if (!response.ok) {
+    if (response.status === 401 && impersonated) sessionStore.clear();
     throw new ApiError(response.status, await readError(response), response.headers.get('X-Correlation-Id') ?? undefined);
   }
   if (response.status === 204) return undefined as T;

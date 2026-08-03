@@ -8,10 +8,11 @@ export type SessionUser = {
 export type SessionState = {
   accessToken: string | null;
   user: SessionUser | null;
+  impersonation: { tenantName: string; sessionId: string; expiresInSeconds: number } | null;
   status: 'anonymous' | 'authenticated';
 };
 
-let state: SessionState = { accessToken: null, user: null, status: 'anonymous' };
+let state: SessionState = { accessToken: null, user: null, impersonation: null, status: 'anonymous' };
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -25,7 +26,11 @@ export const sessionStore = {
     return () => listeners.delete(listener);
   },
   authenticate(accessToken: string, user: SessionUser) {
-    state = { accessToken, user, status: 'authenticated' };
+    state = { accessToken, user, impersonation: null, status: 'authenticated' };
+    emit();
+  },
+  impersonate(accessToken: string, user: SessionUser, impersonation: NonNullable<SessionState['impersonation']>) {
+    state = { accessToken, user, impersonation, status: 'authenticated' };
     emit();
   },
   replaceToken(accessToken: string) {
@@ -33,7 +38,7 @@ export const sessionStore = {
     emit();
   },
   clear() {
-    state = { accessToken: null, user: null, status: 'anonymous' };
+    state = { accessToken: null, user: null, impersonation: null, status: 'anonymous' };
     emit();
   },
 };

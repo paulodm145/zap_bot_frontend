@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { sessionStore } from '@/lib/auth/session-store';
 
-const anonymousSnapshot = { accessToken: null, user: null, status: 'anonymous' as const };
+const anonymousSnapshot = { accessToken: null, user: null, impersonation: null, status: 'anonymous' as const };
 const serverSnapshot = () => anonymousSnapshot;
 
 export function useSession() {

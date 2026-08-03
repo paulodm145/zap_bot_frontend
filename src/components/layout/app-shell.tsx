@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BarChart3, Bell, Bot, ChevronDown, LogOut, Menu, MessagesSquare, Settings, Users, Workflow, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
+import { BarChart3, Bell, Bot, ChevronDown, LogOut, Menu, MessagesSquare, Settings, ShieldCheck, Users, Workflow, X } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
 import styles from './app-shell.module.css';
 import { useLogout } from '@/hooks/auth/use-logout';
 import { AuthGuard } from '@/components/auth/auth-guard';
+import { useSession } from '@/hooks/auth/use-session';
+import { sessionStore } from '@/lib/auth/session-store';
 
 const nav = [
   { href: '/dashboard', label: 'Visão geral', icon: BarChart3 },
@@ -20,6 +23,9 @@ const nav = [
 
 export function AppShell({ children, title, subtitle, actions }: { children: React.ReactNode; title: string; subtitle?: string; actions?: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSession();
   const [open, setOpen] = useState(false);
   const logout = useLogout();
   return (
@@ -33,6 +39,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         <div className={styles.sidebarBottom}><Link href="#"><Settings size={19} />Configurações</Link><button className={styles.logout} onClick={() => logout.mutate()} disabled={logout.isPending}><LogOut size={19} />{logout.isPending ? 'Saindo...' : 'Sair'}</button><div className={styles.profile}><span>PR</span><div><strong>Paulo Roberto</strong><small>Administrador</small></div><ChevronDown size={15} /></div></div>
       </aside>
       <div className={styles.content}>
+        {session.impersonation && <div className={styles.impersonation}><ShieldCheck size={16} /><strong>Acessando como {session.impersonation.tenantName}</strong><span>Sessão administrativa temporária</span><button onClick={() => { sessionStore.clear(); queryClient.clear(); router.replace('/interno/tenants'); }}>Sair da conta do cliente</button></div>}
         <header className={styles.topbar}><button className={styles.menu} onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu size={22} /></button><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div><div className={styles.actions}>{actions}<Button variant="ghost" size="icon" aria-label="Notificações" icon={<Bell size={19} />} /><span className={styles.avatar}>PR</span></div></header>
         <main className={`${styles.main} page-enter`}>{children}</main>
       </div>

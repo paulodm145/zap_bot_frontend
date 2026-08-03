@@ -9,11 +9,12 @@ export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: () => apiRequest<void>('/auth/logout', { method: 'POST' }),
+    mutationFn: () => sessionStore.getSnapshot().impersonation ? Promise.resolve() : apiRequest<void>('/auth/logout', { method: 'POST' }),
     onSettled() {
+      const wasImpersonating = Boolean(sessionStore.getSnapshot().impersonation);
       sessionStore.clear();
       queryClient.clear();
-      router.replace('/login');
+      router.replace(wasImpersonating ? '/interno/tenants' : '/login');
     },
   });
 }
