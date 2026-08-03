@@ -35,8 +35,9 @@ button { cursor: pointer; }
 .page-enter { animation: page-in .35s ease both; }
 
 /* Mantém formulários operacionais legíveis em todas as telas. */
-main form label { font-size: 13px; }
-main form input, main form select, main form textarea { font-size: 14px; }
+main form[class] label { font-size: 14px; line-height: 1.4; }
+main form[class] input, main form[class] select, main form[class] textarea { min-height: 44px; font-size: 15px; }
+main form[class] small { font-size: 12px; line-height: 1.45; }
 @keyframes page-in { from { opacity: 0; transform: translateY(5px); } }
 
 @media (prefers-reduced-motion: reduce) {
