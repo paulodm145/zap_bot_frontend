@@ -1,5 +1,13 @@
 # Autenticação
 
+`POST /login` aceita até 10 tentativas por combinação de IP e e-mail em 15
+minutos. `POST /refresh` aceita 60 por IP no mesmo período. O excesso retorna
+`429 LIMITE_TENTATIVAS`.
+
+Em produção, o refresh cookie usa `HttpOnly`, `Secure`, `SameSite=None` e
+`Path=/api/v1/auth`. Em desenvolvimento/teste usa `SameSite=Lax` sem `Secure`
+para funcionar por HTTP local; os demais atributos permanecem iguais.
+
 ## Objetivo e escopo
 
 Este documento orienta o frontend sobre autenticação, renovação de sessão,

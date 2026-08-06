@@ -1,5 +1,10 @@
 # Mensagens de atendimento e WhatsApp
 
+O webhook assinado confirma com `200` eventos estruturalmente válidos. Tipos
+ainda não suportados e contas sem tenant ativo são somados em `ignoradas`, sem
+criar job. A resposta contém `recebidas`, `duplicadas`, `ignoradas` e, quando
+aplicável, `statusRecebidos`.
+
 ## Envio manual
 
 Use `POST /api/v1/conversas/{conversaId}/mensagens`. A conversa deve estar em `COM_ATENDENTE`, pertencer ao atendente autenticado, possuir janela aberta e usar uma conta WhatsApp ativa e validada.

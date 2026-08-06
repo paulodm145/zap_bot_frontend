@@ -1,5 +1,8 @@
 # Admin interno
 
+O `estadoToken` intermediário do TOTP é consumido somente depois de um código
+válido e não pode emitir uma segunda sessão.
+
 ## Objetivo e permissões
 
 O admin interno é exclusivo da equipe operadora do SaaS. O prefixo é

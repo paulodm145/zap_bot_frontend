@@ -350,6 +350,21 @@ Se a instrução afetar 0 linhas, outro atendente já assumiu — o painel receb
 - Alertas simples (e-mail ou notificação no painel) quando um tenant ultrapassa X% do limite do plano.
 - Logs de aplicação centralizados (mínimo: arquivos rotacionados via PM2/logrotate no MVP; evoluir para serviço externo tipo Better Stack/Axiom se necessário).
 
+### 10.1 E-mails transacionais
+
+E-mails são efeitos assíncronos. A API persiste primeiro a regra de domínio e
+publica um job tipado na fila BullMQ `emails-transacionais`; não aguarda SMTP
+ou API externa. O job contém `tenantId`, tipo do template, destinatário e
+variáveis validadas com Zod. Um worker renderiza versões texto/HTML e chama o
+provedor configurado (`smtp`, `resend` ou `local`). Falhas usam retry com
+backoff exponencial e não alteram a resposta neutra da recuperação de senha.
+Jobs concluídos são removidos imediatamente; falhas ficam retidas por no
+máximo uma hora, reduzindo a permanência do link sensível no Redis.
+
+MailHog é o provedor SMTP de desenvolvimento. Novos e-mails transacionais
+devem adicionar um tipo discriminado ao contrato do job e um template, sem
+acoplar controllers ou regras de domínio ao transporte escolhido.
+
 ## 11. Estratégia de deploy
 
 - Repositório único (monorepo) com `apps/api`, `apps/worker` (ou pastas dentro do mesmo backend), `apps/frontend` (Next.js na Vercel).
@@ -823,6 +838,7 @@ Ambiente separado do painel de cada tenant — acesso restrito à equipe operado
 | POST | `/interno/tenants` | Aciona o `TenantProvisioningService` (criação manual — fase 1) |
 | PATCH | `/interno/tenants/:id/status` | Suspende/reativa um tenant |
 | PATCH | `/interno/tenants/:id/plano` | Altera plano manualmente |
+| DELETE | `/interno/tenants/:id` | Exclui definitivamente o banco físico e registros centrais após reautenticação |
 | GET | `/interno/tenants/:id/uso` | Consumo agregado (IA, mensageria) do tenant, lido de `usage_logs` no banco daquele tenant |
 | GET | `/interno/metricas` | Visão geral: nº de tenants ativos, consumo agregado de infraestrutura |
 
@@ -843,6 +859,57 @@ Implementação via TOTP (`speakeasy` ou `otpauth`), compatível com Google Auth
 
 - `central_db.users` ganha os campos `totp_secret_criptografado` e `totp_habilitado` (apenas relevantes para usuários com papel `super_admin`).
 - JWT do painel interno é emitido com escopo próprio (claim `papel: 'super_admin'`), verificado por um middleware dedicado (`autenticacaoInterna.middleware.ts`), nunca aceito nas rotas do tenant e vice-versa.
+
+### 18.4 Impersonação administrativa de tenant
+
+O `super_admin` pode abrir temporariamente o painel de um tenant ativo por
+`POST /interno/tenants/:tenantId/impersonar`. O backend resolve o tenant pelo
+`public_id` no banco central, seleciona seu primeiro `ADMIN_TENANT` ativo e
+emite um access token tenant; nome de banco e string de conexão nunca são
+aceitos do cliente.
+
+Restrições obrigatórias:
+
+- exige JWT interno válido e operador `SUPER_ADMIN` ainda ativo;
+- aceita somente tenant `ATIVO` com administrador tenant ativo;
+- access token expira em no máximo 15 minutos e não possui refresh token;
+- token carrega `impersonacao.operadorPublicId` e
+  `impersonacao.sessaoPublicId`, além das claims normais do tenant;
+- cada emissão registra `IMPERSONAR_TENANT` em `auditoria_interna`, com
+  operador, tenant, usuário assumido, sessão, IP e timestamp;
+- o endpoint limpa eventual cookie de refresh tenant anterior;
+- o frontend mantém os tokens interno e impersonado separados, mostra banner
+  de contexto e nunca tenta renovar a sessão impersonada;
+- encerrar a impersonação consiste em descartar o token temporário e retornar
+  à sessão interna, sem criar ou revogar credenciais do usuário assumido.
+
+### 18.5 Bloqueio e exclusão definitiva
+
+`SUSPENSO` é o bloqueio reversível: preserva todos os dados e impede resolução
+de conexão para novas requisições. Exclusão definitiva é uma exceção explícita
+à política geral de retenção e somente pode ocorrer para tenant `SUSPENSO` ou
+`CANCELADO`.
+
+O endpoint destrutivo exige JWT interno, senha atual do `SUPER_ADMIN`,
+`confirmar: true`, nome exato do tenant e motivo. A sequência é:
+
+1. reautenticar o operador e validar confirmação;
+2. tornar o tenant `CANCELADO` e revogar suas sessões em transação central;
+3. encerrar o cliente/pool mantido pela aplicação;
+4. validar o nome físico contra o padrão interno e executar
+   `DROP DATABASE ... WITH (FORCE)`;
+5. após o drop, excluir assinaturas, usuários e tenant em transação central;
+6. preservar auditoria com operador, UUID do tenant, nome, banco, motivo, IP e
+   timestamp.
+
+Se o drop falhar, nenhum usuário, assinatura ou tenant é removido do banco
+central; o tenant permanece cancelado e a falha é auditada para permitir nova
+tentativa. A API não aceita nome de banco ou conexão no request.
+
+Até a implementação da rotina futura de backup externo no S3, essa operação
+não possui recuperação. Quando o backup for desenvolvido, ele deverá ser uma
+etapa verificável anterior ao drop, com retenção, criptografia e teste de
+restauração documentados.
 
 ---
 

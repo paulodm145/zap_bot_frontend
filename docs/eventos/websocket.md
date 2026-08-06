@@ -1,5 +1,9 @@
 # Chat em tempo real com Socket.IO
 
+O servidor revalida periodicamente usuário, tenant e expiração do access token.
+Quando a sessão deixa de ser válida, emite `sessao:expirada` com motivo
+`CREDENCIAL_INVALIDA` e encerra o socket.
+
 ## Conexão e autenticação
 
 Conecte no mesmo domínio da API, path `/socket.io`, enviando o access token curto em `auth.token`:

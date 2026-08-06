@@ -1,9 +1,37 @@
 # Administração de tenants
 
+`POST /api/v1/interno/tenants` persiste o registro central, publica um job e
+responde `202` sem aguardar banco ou migrations. O progresso é acompanhado no
+detalhe do tenant; migrations têm timeout de 120 segundos por tentativa.
+
 ## Acesso
 
 Todas as rotas usam `/api/v1/interno/tenants` e exigem JWT interno de
 `super_admin`. Tokens de usuários de tenant não são aceitos.
+
+## Conectar como tenant (impersonação)
+
+Na lista ou no detalhe, o botão **Conectar** chama:
+
+```http
+POST /api/v1/interno/tenants/{tenantId}/impersonar
+Authorization: Bearer <token-interno>
+```
+
+Não envie body. Em sucesso, a resposta contém o `accessToken`, o administrador
+tenant assumido e os metadados `impersonacao` (`operadorId`, `sessaoId` e
+`expiraEmSegundos`).
+
+O frontend deve manter o token interno original separado, guardar o token
+impersonado apenas em memória e abrir o painel do tenant com este último. Exiba
+um banner persistente “Acessando como Empresa X” e uma ação **Sair da conta do
+cliente**, que descarta o token impersonado e retorna ao painel interno.
+
+Não chame `/auth/refresh` durante a impersonação: ela dura no máximo 15 minutos
+e não possui refresh token. Ao receber `401`, descarte a sessão impersonada e
+retorne ao painel interno. O endpoint limpa eventual cookie de refresh tenant
+anterior. Tenant suspenso/inexistente ou sem administrador ativo retorna `404`.
+Cada conexão gera uma auditoria `IMPERSONAR_TENANT`.
 
 ## Tela de listagem
 
@@ -55,6 +83,40 @@ A tela deve exigir confirmação e motivo. Transições:
 - pagamento, provisionamento ou falha → `CANCELADO`.
 
 Tenant cancelado não pode ser reativado. Toda alteração gera auditoria.
+
+Para bloquear temporariamente sem apagar dados, use `SUSPENSO`. A resolução de
+conexão recusa imediatamente novos acessos do tenant, e a reativação continua
+disponível pelo mesmo endpoint com status `ATIVO`.
+
+## Exclusão definitiva
+
+`DELETE /api/v1/interno/tenants/{tenantId}` elimina banco físico, usuários,
+sessões, assinaturas, configurações, conversas e mensagens. Nesta etapa ainda
+não existe backup automático em S3; portanto não há recuperação.
+
+O botão **Excluir definitivamente** deve ficar disponível somente quando o
+tenant estiver `SUSPENSO` ou `CANCELADO`. Use um modal separado da alteração de
+status, sem confirmação genérica. Solicite senha atual do operador, motivo e
+digitação do nome exato exibido no detalhe:
+
+```json
+{
+  "senha": "senha-atual-do-super-admin",
+  "confirmar": true,
+  "nomeTenant": "Empresa Exemplo",
+  "motivo": "Encerramento definitivo solicitado pelo responsável"
+}
+```
+
+Em `204`, remova o tenant do cache e retorne à lista. Não tente ler JSON. Em
+`401`, mantenha o modal aberto, limpe somente a senha e informe falha de
+reautenticação. Em `409`, refaça o detalhe porque o tenant não está bloqueado
+ou não possui banco provisionado. Em `422`, destaque a confirmação/nome.
+
+Durante a requisição, bloqueie fechamento do modal e repetição do botão. Se o
+drop do banco falhar, o backend mantém os registros centrais, deixa o tenant
+`CANCELADO` e registra a falha para retry. A auditoria final é preservada fora
+do registro removido.
 
 ## Alteração manual de plano
 

@@ -1,5 +1,9 @@
 # Cliente HTTP do frontend
 
+Para as orientações consolidadas das últimas mudanças (perfis, rate limit,
+fluxo de entrada, webhook, idempotência, histórico e Socket.IO), consulte o
+[Guia de integração do frontend](../ATUALIZACOES-FRONTEND.md).
+
 ## Configuração
 
 Use uma única URL base configurável. Em desenvolvimento:
@@ -53,6 +57,18 @@ async function chamarApi<T>(
 Os tipos reais devem ser gerados ou escritos a partir de
 `GET /api/v1/openapi.json`. O exemplo usa `unknown` nos detalhes porque cada
 código de erro pode possuir uma estrutura específica; valide antes de acessar.
+
+Para gerar os tipos da INT-10 com a API em execução:
+
+```bash
+npx openapi-typescript \
+  http://localhost:3000/api/v1/openapi.json \
+  --output src/lib/api/generated.ts
+```
+
+O endereço deve ser obtido pela origem exata configurada em
+`ORIGENS_PERMITIDAS`. Respostas JSON 2xx possuem schema executável no contrato;
+respostas `204` não possuem corpo e não devem ser desserializadas.
 
 ## Login e renovação tenant
 
@@ -113,9 +129,10 @@ const consulta = new URLSearchParams({
 
 O backend usa `credentials: true` e uma origem exata configurada em
 `ORIGENS_PERMITIDAS`. O frontend não funcionará com uma origem diferente da
-configurada. O refresh token é `HttpOnly`, `Secure`, `SameSite=None` e não pode
-ser lido por JavaScript. Em ambientes separados, frontend e API devem usar
-HTTPS para que o navegador aceite o cookie seguro.
+configurada. O refresh token é `HttpOnly` e não pode ser lido por JavaScript.
+Em produção, usa `Secure`, `SameSite=None` e `Path=/api/v1/auth`; em
+desenvolvimento e teste usa `SameSite=Lax` sem `Secure` para funcionar sobre
+HTTP local. Em ambientes separados, frontend e API devem usar HTTPS.
 
 ## Diagnóstico
 

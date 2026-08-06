@@ -51,7 +51,9 @@ Documentos funcionais disponíveis:
 - [Usuários e permissões](api/usuarios.md)
 - [Schema JSON dos fluxos](schemas/fluxo-json.md)
 - [Contribuição e checks de qualidade](CONTRIBUICAO.md)
+- [Atualizações e orientações para o frontend](ATUALIZACOES-FRONTEND.md)
 - [Tarefas dos recursos operacionais](TAREFAS-RECURSOS-OPERACIONAIS.md)
+- [Tarefas de e-mail transacional](TAREFAS-EMAIL-TRANSACIONAL.md)
 
 ## Swagger e Markdown
 

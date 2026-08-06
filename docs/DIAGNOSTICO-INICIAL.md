@@ -27,7 +27,8 @@ etapas indicadas neste documento.
 - Servidor iniciado separadamente em `src/servidor.ts`.
 - Configuração de ambiente em `src/config/`.
 - Erros e middlewares compartilhados em `src/erros/` e `src/middlewares/`.
-- Primeiro módulo funcional em `src/modulos/interno/auth/`.
+- A autenticação interna atualmente está distribuída nas pastas horizontais
+  `src/controllers`, `src/services`, `src/dtos` e `src/middlewares`.
 - Repository temporário em memória em `src/repositories/memoria/`.
 
 ### Dependências instaladas
@@ -115,8 +116,8 @@ alterado. Cada uma exige decisão na etapa indicada.
 
 ### B3. Organização por funcionalidade
 
-- **Código atual:** controller, DTO, middleware, Service e contratos de auth
-  ficam agrupados em `src/modulos/interno/auth/`.
+- **Código no diagnóstico original:** controller, DTO, middleware, Service e
+  contratos de auth ficavam agrupados em `src/modulos/interno/auth/`.
 - **Estrutura sugerida na arquitetura:** pastas horizontais
   `src/controllers`, `src/services`, `src/repositories`, `src/dtos` e
   `src/middlewares`.
@@ -127,9 +128,9 @@ alterado. Cada uma exige decisão na etapa indicada.
 - **Etapa relacionada:** 01.
 - **Decisão em 29/07/2026:** migrar para pastas horizontais conforme a
   arquitetura documentada.
-- **Tratamento:** migração executada na Etapa 01; a árvore ativa agora usa
-  `controllers/`, `dtos/`, `middlewares/`, `repositories/`, `rotas/` e
-  `services/`.
+- **Tratamento:** migração executada na Etapa 01; `src/modulos` foi removida e
+  a árvore ativa usa `controllers/`, `dtos/`, `middlewares/`, `repositories/`,
+  `rotas/` e `services/`.
 
 ### B4. Repository temporário na composição de produção
 

@@ -2,6 +2,9 @@
 
 `GET /api/v1/contatos?skip=0&take=20&busca=maria` retorna contatos com paginação server-side. A busca considera nome normalizado e telefone. Atendentes recebem apenas contatos com conversas nos seus setores.
 
+A listagem não calcula o total de conversas por contato. Essa informação deve
+ser carregada no detalhe quando a tela realmente precisar dela.
+
 ## Lista de conversas
 
 Use `GET /api/v1/conversas` com `skip`, `take`, `busca` e filtros opcionais `status`, `setorId`, `atendenteId` e `contaId`. Estados: `BOT`, `AGUARDANDO_ATENDENTE`, `COM_ATENDENTE` e `ENCERRADA`.

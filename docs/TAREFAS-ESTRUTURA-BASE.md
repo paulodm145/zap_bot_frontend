@@ -822,6 +822,57 @@ Objetivo: tornar automáticas as validações exigidas para merge.
 
 ## Backlog posterior à estrutura base
 
+## Etapa 12 — Correções da revisão de QA
+
+Branch: `fix/revisao-qa`
+
+Objetivo: corrigir as falhas de segurança, disponibilidade, performance,
+qualidade e cobertura registradas em `docs/revisao-qa.md`, preservando o
+isolamento multi-tenant e sincronizando os contratos afetados.
+
+### Falhas e segurança
+
+- [x] Aceitar e ignorar eventos e mensagens WhatsApp ainda não suportados (`FAL-1`, `FAL-3`, `TES-2`).
+- [x] Tornar seguro o ciclo de vida do cache LRU de conexões tenant (`FAL-2`, `TES-1`).
+- [x] Recuperar reservas expiradas de mensagens de saída (`FAL-4`, `TES-3`).
+- [x] Tratar atomicamente a idempotência de mensagens de atendimento (`FAL-5`).
+- [x] Executar provisionamento de tenant de forma assíncrona e limitada por timeout (`FAL-6`).
+- [x] Aplicar timeouts aos transportes de e-mail (`FAL-7`).
+- [x] Definir e integrar o fluxo de entrada das mensagens recebidas (`FAL-8`).
+- [x] Aplicar rate limit padronizado às rotas de autenticação (`SEG-1`).
+- [x] Centralizar hash dummy bcrypt válido (`SEG-2`, `QUA-4`).
+- [x] Restringir mutações de fluxos a perfis de gestão (`SEG-3`, `TES-4`).
+- [x] Revalidar e renovar autenticação de sessões Socket.io (`SEG-4`).
+- [x] Tornar o estado intermediário TOTP de uso único (`SEG-5`).
+- [x] Centralizar comparação de segredos em tempo constante (`SEG-6`).
+- [x] Manter cookie estrito em produção e compatível com HTTP local (`SEG-7`).
+
+### Performance e qualidade
+
+- [x] Cachear resolução de acesso sem armazenar conexão em texto claro (`PER-1`).
+- [x] Criar índices trigram para buscas com semântica de contém (`PER-2`).
+- [x] Substituir `SCAN` de presença por conjunto de sockets (`PER-3`).
+- [x] Separar conexões Redis por finalidade (`PER-4`).
+- [x] Remover contagem correlacionada da listagem de contatos (`PER-5`).
+- [x] Injetar fábricas de dependências tenant nos controllers (`QUA-1`).
+- [x] Tratar ausência de contexto como invariante interna (`QUA-2`).
+- [x] Extrair composição e contexto tenant repetidos de `app.ts` (`QUA-3`).
+- [x] Validar explicitamente a chave criptográfica do TOTP (`QUA-5`).
+- [x] Definir comportamento consistente após falha de enfileiramento (`QUA-6`).
+- [x] Uniformizar travessia de ciclos do grafo com pilha iterativa (`QUA-7`).
+- [x] Combinar filtros do histórico sem sobrescrever o escopo de atendentes.
+- [x] Impedir reassociação concorrente de `phone_number_id` entre tenants.
+- [x] Restaurar fluxo de entrada e roteamento após rollback de conta WhatsApp.
+- [x] Adicionar `updated_at` às tabelas de auditoria do banco tenant.
+
+### Checklist de saída
+
+- [x] Decisões de trade-off registradas separadamente.
+- [x] Swagger e Markdown sincronizados com os contratos alterados.
+- [x] Migrations central e tenant aplicáveis independentemente.
+- [x] Formatação, lint, typecheck, testes e build aprovados.
+- [x] Itens correspondentes em `docs/revisao-qa.md` marcados como concluídos.
+
 O detalhamento aprovado para usuários, empresa, WhatsApp, setores, conversas e
 chat deve ser acompanhado em
 [`TAREFAS-RECURSOS-OPERACIONAIS.md`](TAREFAS-RECURSOS-OPERACIONAIS.md).

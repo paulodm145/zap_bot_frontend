@@ -1,5 +1,9 @@
 # Contas WhatsApp do tenant
 
+Uma conta pode receber `fluxoEntradaPublicId` ao criar ou atualizar. O fluxo
+precisa estar publicado no banco do tenant. Mensagens recebidas nessa conta
+iniciam esse fluxo; sem a configuração, a mensagem é persistida sem automação.
+
 ## Objetivo e permissão
 
 Esta funcionalidade implementa o onboarding manual da WhatsApp Cloud API.
