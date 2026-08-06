@@ -1,0 +1,84 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 50%);
+  animation: backdrop-in 150ms ease-out;
+}
+
+.dialog {
+  width: min(440px, 100%);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-14px);
+  animation: dialog-in 200ms ease-out forwards;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--danger);
+  background: #fff1f2;
+  border-radius: var(--radius-sm);
+}
+
+.dialog h2 {
+  margin: 16px 0 6px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dialog p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.error {
+  margin-top: 14px;
+  padding: 10px;
+  color: #a92e39;
+  background: #fff1f2;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.footer {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-in {
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .footer {
+    flex-direction: column-reverse;
+  }
+
+  .footer button {
+    width: 100%;
+  }
+}

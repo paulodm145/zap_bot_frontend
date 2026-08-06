@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Edit3, Plus, Search, Trash2, UserRound } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { FeedbackToast } from '@/components/ui/feedback-toast';
 import { ToggleSwitch } from '@/components/ui/toggle-switch';
@@ -18,6 +19,7 @@ export function UsersView() {
     [skip, setSkip] = useState(0),
     [take, setTake] = useState(20),
     [editing, setEditing] = useState<TenantUser | null | undefined>(undefined),
+    [removing, setRemoving] = useState<TenantUser | undefined>(undefined),
     [nome, setNome] = useState(''),
     [email, setEmail] = useState(''),
     [senha, setSenha] = useState(''),
@@ -142,9 +144,7 @@ export function UsersView() {
               size="icon"
               icon={<Trash2 size={16} />}
               aria-label={`Excluir ${u.nome}`}
-              onClick={() => {
-                if (confirm(`Excluir ${u.nome}?`)) remove.mutate(u.public_id);
-              }}
+              onClick={() => setRemoving(u)}
             />
           </>
         )}
@@ -203,6 +203,16 @@ export function UsersView() {
             )}
           </div>
         </CrudModal>
+      )}
+      {removing && (
+        <ConfirmDialog
+          title={`Excluir ${removing.nome}?`}
+          description="O usuário perde o acesso imediatamente. As conversas que ele atendeu permanecem no histórico."
+          pending={remove.isPending}
+          error={remove.error ? (isApiError(remove.error) ? remove.error.message : 'Falha ao excluir.') : null}
+          onCancel={() => setRemoving(undefined)}
+          onConfirm={() => remove.mutate(removing.public_id, { onSuccess: () => setRemoving(undefined) })}
+        />
       )}
     </AppShell>
   );

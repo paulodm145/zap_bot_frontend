@@ -4,6 +4,7 @@ import { Building2, Edit3, Plus, Search, Trash2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { CrudModal } from './crud-modal';
 import { useDeleteSector, useSaveSector, useSectors } from '@/hooks/tenant/use-sectors';
@@ -17,6 +18,7 @@ export function SectorsView() {
     [skip, setSkip] = useState(0),
     [take, setTake] = useState(20),
     [editing, setEditing] = useState<Sector | null | undefined>(undefined),
+    [removing, setRemoving] = useState<Sector | undefined>(undefined),
     [nome, setNome] = useState(''),
     [descricao, setDescricao] = useState('');
   const debounced = useDebouncedValue(search),
@@ -113,9 +115,7 @@ export function SectorsView() {
                     size="icon"
                     icon={<Trash2 size={16} />}
                     aria-label={`Excluir ${s.nome}`}
-                    onClick={() => {
-                      if (confirm(`Excluir ${s.nome}?`)) remove.mutate(s.public_id);
-                    }}
+                    onClick={() => setRemoving(s)}
                   />
                 </>
               )
@@ -149,6 +149,16 @@ export function SectorsView() {
             </label>
           </div>
         </CrudModal>
+      )}
+      {removing && (
+        <ConfirmDialog
+          title={`Excluir ${removing.nome}?`}
+          description="O setor deixa de receber novas conversas. As conversas já direcionadas a ele não são removidas."
+          pending={remove.isPending}
+          error={remove.error ? (isApiError(remove.error) ? remove.error.message : 'Falha ao excluir.') : null}
+          onCancel={() => setRemoving(undefined)}
+          onConfirm={() => remove.mutate(removing.public_id, { onSuccess: () => setRemoving(undefined) })}
+        />
       )}
     </AppShell>
   );

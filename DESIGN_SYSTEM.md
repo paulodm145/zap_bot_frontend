@@ -33,6 +33,23 @@ O produto usa uma linguagem acolhedora, confiável e operacional. O verde remete
 
 O backend deve retornar `{ dados, total, skip, take }`. Ao alterar `take`, a tabela emite `skip: 0`. Use `loading` durante a requisição e forneça `sort`/`onSortChange` quando o endpoint aceitar ordenação.
 
+### ConfirmDialog
+
+`ConfirmDialog` confirma ações destrutivas. Recebe `title`, `description`, `onCancel` e `onConfirm`, além de `pending` e `error` para refletir a requisição em andamento e a falha do backend sem fechar o diálogo. Usa `role="alertdialog"`, fecha com `Escape` ou clique no fundo e é renderizado em portal.
+
+Não use `confirm()` nativo: ele ignora os tokens, não exibe o erro da requisição e não permite descrever a consequência da ação. Toda exclusão deve explicar o que acontece com os dados relacionados.
+
+```tsx
+<ConfirmDialog
+  title={`Excluir ${setor.nome}?`}
+  description="O setor deixa de receber novas conversas."
+  pending={remove.isPending}
+  error={erro}
+  onCancel={() => setRemoving(undefined)}
+  onConfirm={() => remove.mutate(setor.public_id)}
+/>
+```
+
 ## Padrões de interface
 
 - Use uma ação primária por contexto e verbos objetivos: “Salvar”, “Enviar instruções”.
