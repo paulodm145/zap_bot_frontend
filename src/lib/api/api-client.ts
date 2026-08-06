@@ -18,14 +18,20 @@ async function readError(response: Response): Promise<ApiErrorBody> {
   }
 }
 
-async function refreshAccessToken() {
+function apiError(response: Response, body: ApiErrorBody) {
+  const retryAfter = response.headers.get('Retry-After');
+  const retryAfterSeconds = retryAfter && /^\d+$/.test(retryAfter) ? Number(retryAfter) : undefined;
+  return new ApiError(response.status, body, response.headers.get('X-Correlation-Id') ?? undefined, retryAfterSeconds);
+}
+
+export async function refreshAccessToken() {
   if (!refreshRequest) {
     refreshRequest = fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { Accept: 'application/json' },
     }).then(async (response) => {
-      if (!response.ok) throw new ApiError(response.status, await readError(response), response.headers.get('X-Correlation-Id') ?? undefined);
+      if (!response.ok) throw apiError(response, await readError(response));
       const body = await response.json() as { accessToken: string };
       sessionStore.replaceToken(body.accessToken);
       return body.accessToken;
@@ -40,13 +46,13 @@ async function refreshAccessToken() {
 }
 
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { auth = true, retryAuth = true, headers, ...requestOptions } = options;
+  const { auth = true, retryAuth = true, headers, credentials, ...requestOptions } = options;
   const session = sessionStore.getSnapshot();
   const token = session.accessToken;
   const impersonated = Boolean(session.impersonation);
   const response = await fetch(`${API_URL}${path.startsWith('/') ? path : `/${path}`}`, {
     ...requestOptions,
-    credentials: impersonated ? 'omit' : 'include',
+    credentials: impersonated ? 'omit' : (credentials ?? 'omit'),
     headers: {
       Accept: 'application/json',
       ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
@@ -61,8 +67,8 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   }
 
   if (!response.ok) {
-    if (response.status === 401 && impersonated) sessionStore.clear();
-    throw new ApiError(response.status, await readError(response), response.headers.get('X-Correlation-Id') ?? undefined);
+    if (response.status === 401 && auth) sessionStore.clear();
+    throw apiError(response, await readError(response));
   }
   if (response.status === 204) return undefined as T;
   return await response.json() as T;

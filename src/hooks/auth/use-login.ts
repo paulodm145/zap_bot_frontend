@@ -15,6 +15,7 @@ export function useLogin() {
       method: 'POST',
       auth: false,
       retryAuth: false,
+      credentials: 'include',
       body: JSON.stringify({ email: input.email.trim().toLowerCase(), senha: input.senha }),
     }),
     onSuccess(response) {

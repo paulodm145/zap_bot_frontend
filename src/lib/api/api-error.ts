@@ -5,14 +5,16 @@ export class ApiError extends Error {
   readonly code: string;
   readonly details?: unknown;
   readonly correlationId?: string;
+  readonly retryAfterSeconds?: number;
 
-  constructor(status: number, body: ApiErrorBody, correlationId?: string) {
+  constructor(status: number, body: ApiErrorBody, correlationId?: string, retryAfterSeconds?: number) {
     super(body.erro.mensagem);
     this.name = 'ApiError';
     this.status = status;
     this.code = body.erro.codigo;
     this.details = body.erro.detalhes;
     this.correlationId = correlationId;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 

@@ -23,7 +23,9 @@ export function LoginForm() {
       if (isApiError(error) && error.code === 'CREDENCIAIS_INVALIDAS') setPassword('');
     }
   }
-  const errorMessage = login.error ? (isApiError(login.error) ? login.error.message : 'Não foi possível conectar ao servidor. Tente novamente.') : null;
+  const errorMessage = login.error ? (isApiError(login.error) && login.error.status === 429
+    ? `Muitas tentativas. Tente novamente${login.error.retryAfterSeconds ? ` em ${login.error.retryAfterSeconds} segundos` : ' mais tarde'}.`
+    : isApiError(login.error) ? login.error.message : 'Não foi possível conectar ao servidor. Tente novamente.') : null;
   return (
     <div className={`${styles.formCard} page-enter`}>
       <div className={styles.mobileLogo}><span>zapbot</span></div>
