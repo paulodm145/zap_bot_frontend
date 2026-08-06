@@ -22,7 +22,7 @@ describe('flow graph contract conversion', () => {
     const graph: FlowGraph = {
       nodes: [
         { id: 'inicio', type: 'flowNode', position: { x: 0, y: 0 }, data: { label: 'Mensagem', detail: 'Início', kind: 'message', icon: 'message', content: 'Olá' } },
-        { id: 'setor', type: 'flowNode', position: { x: 0, y: 100 }, data: { label: 'Setor', detail: 'Fiscal', kind: 'team', icon: 'team', content: 'setor-1' } },
+        { id: 'setor', type: 'flowNode', position: { x: 0, y: 100 }, data: { label: 'Setor', detail: 'Fiscal', kind: 'team', icon: 'team', content: '', sectorId: 'setor-1' } },
       ],
       edges: [{ id: 'e1', source: 'inicio', target: 'setor' }],
     };
@@ -30,6 +30,15 @@ describe('flow graph contract conversion', () => {
       { id: 'inicio', tipo: 'mensagem', dados: { texto: 'Olá' }, proximo: 'setor' },
       { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' } },
     ] });
+  });
+
+  it('preserves the selected sector when loading and saving a flow', () => {
+    const definition = { schemaVersao: 1 as const, noInicial: 'atendimento', nos: [
+      { id: 'atendimento', tipo: 'direcionar_setor', dados: { setorId: '11111111-1111-4111-8111-111111111111' } },
+    ] };
+    const graph = definitionToGraph(definition);
+    expect(graph.nodes[0].data.sectorId).toBe('11111111-1111-4111-8111-111111111111');
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual(definition);
   });
 
   it('round-trips the supported response capture node', () => {
