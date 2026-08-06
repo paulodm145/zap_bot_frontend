@@ -1,17 +1,7 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { FlowDefinition } from './types';
+import type { FlowDefinition, FlowNodeData } from './types';
 
-export type FlowNodeData = {
-  label: string;
-  detail: string;
-  kind: string;
-  icon: string;
-  content: string;
-  sectorId?: string;
-  /** Nome da variável onde a captura guarda a resposta; exigido pelo backend. */
-  variable?: string;
-  validationError?: string;
-};
+export type { FlowNodeData } from './types';
 export type FlowGraph = { nodes: Node<FlowNodeData>[]; edges: Edge[] };
 
 const edgeStyle = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
