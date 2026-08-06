@@ -1,2 +1,189 @@
-.shell { min-height: 100vh; display: grid; grid-template-columns: 258px 1fr; background: #f3f6f5; }.sidebar { position: sticky; top: 0; height: 100vh; padding: 22px 15px; display: flex; flex-direction: column; z-index: 20; color: white; background: linear-gradient(180deg, #082d32, #071f24); }.logo { padding: 0 7px 22px; display: flex; justify-content: space-between; }.logo button { display: none; color: white; border: 0; background: transparent; }.scope { padding: 11px; display: flex; gap: 9px; align-items: center; color: #91e5ca; border: 1px solid rgb(145 229 202 / 18%); border-radius: 10px; background: rgb(145 229 202 / 6%); }.scope div { display: grid; gap: 2px; }.scope small { font-size: 8px; letter-spacing: .12em; }.scope strong { color: white; font-size: 11px; }.sidebar nav { margin-top: 22px; display: grid; gap: 4px; }.sidebar nav a,.bottom > a,.bottom > button { min-height: 43px; padding: 0 11px; display: flex; align-items: center; gap: 10px; color: #9fbdba; border: 0; border-radius: 9px; background: transparent; font-size: 12px; font-weight: 700; }.sidebar nav a svg:last-child { margin-left: auto; opacity: .45; }.sidebar nav a:hover,.bottom > a:hover,.bottom > button:hover,.sidebar nav .active { color: white; background: rgb(33 199 151 / 14%); }.bottom { margin-top: auto; padding-top: 14px; border-top: 1px solid rgb(255 255 255 / 8%); }.bottom > button { width: 100%; }.operator { margin-top: 12px; padding: 11px 8px 0; display: flex; gap: 9px; align-items: center; }.operator > span { width: 32px; height: 32px; display: grid; place-items: center; color: #082d32; background: #79dbc3; border-radius: 9px; font-size: 10px; font-weight: 900; }.operator div { display: grid; gap: 2px; }.operator strong { font-size: 10px; }.operator small { color: #759c98; font-size: 9px; }.content { min-width: 0; }.topbar { min-height: 84px; padding: 0 30px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); background: white; }.topbar h1 { margin: 0; font-size: 20px; letter-spacing: -.03em; }.topbar p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }.actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }.main { padding: 28px 30px 48px; }.menu { display: none; border: 0; background: transparent; }.overlay { display: none; }
-@media (max-width: 900px) { .shell { grid-template-columns: 1fr; }.sidebar { position: fixed; left: -270px; width: 258px; transition: left .2s; }.sidebar.open { left: 0; }.logo button,.menu { display: block; }.overlay { display: block; position: fixed; inset: 0; z-index: 15; border: 0; background: rgb(5 26 28 / 45%); }.main { padding: 22px 18px 40px; }.topbar { padding: 0 18px; } }
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 258px 1fr;
+  background: #f3f6f5;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 22px 15px;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  color: white;
+  background: linear-gradient(180deg, #082d32, #071f24);
+}
+.logo {
+  padding: 0 7px 22px;
+  display: flex;
+  justify-content: space-between;
+}
+.logo button {
+  display: none;
+  color: white;
+  border: 0;
+  background: transparent;
+}
+.scope {
+  padding: 11px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: #91e5ca;
+  border: 1px solid rgb(145 229 202 / 18%);
+  border-radius: 10px;
+  background: rgb(145 229 202 / 6%);
+}
+.scope div {
+  display: grid;
+  gap: 2px;
+}
+.scope small {
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+.scope strong {
+  color: white;
+  font-size: 11px;
+}
+.sidebar nav {
+  margin-top: 22px;
+  display: grid;
+  gap: 4px;
+}
+.sidebar nav a,
+.bottom > a,
+.bottom > button {
+  min-height: 43px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #9fbdba;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sidebar nav a svg:last-child {
+  margin-left: auto;
+  opacity: 0.45;
+}
+.sidebar nav a:hover,
+.bottom > a:hover,
+.bottom > button:hover,
+.sidebar nav .active {
+  color: white;
+  background: rgb(33 199 151 / 14%);
+}
+.bottom {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+.bottom > button {
+  width: 100%;
+}
+.operator {
+  margin-top: 12px;
+  padding: 11px 8px 0;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.operator > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #082d32;
+  background: #79dbc3;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.operator div {
+  display: grid;
+  gap: 2px;
+}
+.operator strong {
+  font-size: 10px;
+}
+.operator small {
+  color: #759c98;
+  font-size: 9px;
+}
+.content {
+  min-width: 0;
+}
+.topbar {
+  min-height: 84px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  background: white;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+.topbar p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.main {
+  padding: 28px 30px 48px;
+}
+.menu {
+  display: none;
+  border: 0;
+  background: transparent;
+}
+.overlay {
+  display: none;
+}
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: fixed;
+    left: -270px;
+    width: 258px;
+    transition: left 0.2s;
+  }
+  .sidebar.open {
+    left: 0;
+  }
+  .logo button,
+  .menu {
+    display: block;
+  }
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    border: 0;
+    background: rgb(5 26 28 / 45%);
+  }
+  .main {
+    padding: 22px 18px 40px;
+  }
+  .topbar {
+    padding: 0 18px;
+  }
+}

@@ -1,1 +1,77 @@
-.flowName { display: flex; align-items: center; gap: 9px; }.flowName > span { width: 31px; height: 31px; display: grid; place-items: center; flex: 0 0 auto; color: var(--green-700); background: var(--green-50); border-radius: 9px; }.flowName > div { min-width: 0; display: grid; gap: 3px; }.flowName strong,.flowName small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.flowName strong { font-size: 11px; }.flowName small { max-width: 220px; color: var(--muted); font-size: 8px; }.search { min-height: 36px; width: 190px; padding: 0 10px; display: flex; align-items: center; gap: 7px; color: var(--muted); border: 1px solid var(--line); border-radius: 9px; background: white; }.search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 10px; }.status { min-height: 36px; padding: 0 28px 0 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 9px; background: white; font-size: 10px; }.search:focus-within,.status:focus { border-color: var(--green-600); outline: 3px solid rgb(33 199 151 / 16%); }.error { margin-bottom: 14px; padding: 11px 13px; color: #a92e39; background: #fff1f2; border: 1px solid #f3c8cd; border-radius: 10px; font-size: 11px; }
+.flowName {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.flowName > span {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--green-700);
+  background: var(--green-50);
+  border-radius: 9px;
+}
+.flowName > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.flowName strong,
+.flowName small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flowName strong {
+  font-size: 11px;
+}
+.flowName small {
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 8px;
+}
+.search {
+  min-height: 36px;
+  width: 190px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+}
+.search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 10px;
+}
+.status {
+  min-height: 36px;
+  padding: 0 28px 0 10px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+  font-size: 10px;
+}
+.search:focus-within,
+.status:focus {
+  border-color: var(--green-600);
+  outline: 3px solid rgb(33 199 151 / 16%);
+}
+.error {
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  color: #a92e39;
+  background: #fff1f2;
+  border: 1px solid #f3c8cd;
+  border-radius: 10px;
+  font-size: 11px;
+}

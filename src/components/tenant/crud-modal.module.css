@@ -45,22 +45,88 @@
   border-bottom: 1px solid var(--line);
 }
 
-.header h2 { margin: 0; color: var(--ink); font-size: 18px; font-weight: 700; }
-.header p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
-.close { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; color: #66736e; border: 0; border-radius: 6px; background: transparent; }
-.close:hover:not(:disabled) { color: var(--ink); background: #f1f4f3; }
-.body { padding: 20px; overflow-y: auto; }
-.body label { font-size: 13px; line-height: 1.35; }
-.body input, .body select, .body textarea { font-size: 14px; }
-.body small { color: var(--muted); font-size: 11px; line-height: 1.4; }
-.footer { padding: 14px 20px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); background: #f8faf9; }
+.header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+.header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #66736e;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+.close:hover:not(:disabled) {
+  color: var(--ink);
+  background: #f1f4f3;
+}
+.body {
+  padding: 20px;
+  overflow-y: auto;
+}
+.body label {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.body input,
+.body select,
+.body textarea {
+  font-size: 14px;
+}
+.body small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.footer {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  background: #f8faf9;
+}
 
-@keyframes backdrop-in { from { opacity: 0; } }
-@keyframes dialog-in { to { transform: translateY(0); } }
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  to {
+    transform: translateY(0);
+  }
+}
 
 @media (max-width: 680px) {
-  .modal { padding: 12px; }
-  .dialog { min-height: calc(100% - 24px); margin: 12px auto; align-items: flex-end; }
-  .content { max-height: calc(100vh - 24px); border-radius: 12px; }
-  .header, .body, .footer { padding-left: 16px; padding-right: 16px; }
+  .modal {
+    padding: 12px;
+  }
+  .dialog {
+    min-height: calc(100% - 24px);
+    margin: 12px auto;
+    align-items: flex-end;
+  }
+  .content {
+    max-height: calc(100vh - 24px);
+    border-radius: 12px;
+  }
+  .header,
+  .body,
+  .footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }

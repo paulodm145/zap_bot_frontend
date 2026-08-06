@@ -1,1 +1,87 @@
-.tenant { display: flex; align-items: center; gap: 9px; }.tenant > span { width: 32px; height: 32px; display: grid; place-items: center; color: #327ca0; background: #edf7fb; border-radius: 9px; }.tenant div { min-width: 0; display: grid; gap: 3px; }.tenant strong,.tenant small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.tenant strong { font-size: 11px; }.tenant small { max-width: 210px; color: var(--muted); font-size: 8px; }.search { width: 180px; min-height: 36px; padding: 0 9px; display: flex; align-items: center; gap: 7px; color: var(--muted); border: 1px solid var(--line); border-radius: 9px; }.search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; font-size: 10px; }.search:focus-within,.plan:focus,.search + select:focus { border-color: #327ca0; outline: 3px solid rgb(50 124 160 / 12%); }.search + select,.plan { min-height: 36px; padding: 0 9px; color: var(--muted); border: 1px solid var(--line); border-radius: 9px; background: white; font-size: 10px; }.plan { width: 145px; }.error { margin-bottom: 14px; padding: 11px; display: flex; justify-content: space-between; color: #a92e39; background: #fff1f2; border-radius: 9px; font-size: 10px; }.error button { color: inherit; border: 0; background: transparent; font-weight: 800; }
+.tenant {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.tenant > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #327ca0;
+  background: #edf7fb;
+  border-radius: 9px;
+}
+.tenant div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.tenant strong,
+.tenant small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tenant strong {
+  font-size: 11px;
+}
+.tenant small {
+  max-width: 210px;
+  color: var(--muted);
+  font-size: 8px;
+}
+.search {
+  width: 180px;
+  min-height: 36px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 10px;
+}
+.search:focus-within,
+.plan:focus,
+.search + select:focus {
+  border-color: #327ca0;
+  outline: 3px solid rgb(50 124 160 / 12%);
+}
+.search + select,
+.plan {
+  min-height: 36px;
+  padding: 0 9px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+  font-size: 10px;
+}
+.plan {
+  width: 145px;
+}
+.error {
+  margin-bottom: 14px;
+  padding: 11px;
+  display: flex;
+  justify-content: space-between;
+  color: #a92e39;
+  background: #fff1f2;
+  border-radius: 9px;
+  font-size: 10px;
+}
+.error button {
+  color: inherit;
+  border: 0;
+  background: transparent;
+  font-weight: 800;
+}

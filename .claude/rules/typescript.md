@@ -14,7 +14,10 @@
   normalizado uma vez com Prettier 3.9.6 e este é o estilo a manter:
 
   ```bash
+  # TypeScript e TSX
   npx prettier@3.9.6 --single-quote --trailing-comma all --print-width 120 --write <arquivos>
+  # CSS Modules (sem --single-quote: o padrão de aspas do CSS é duplo)
+  npx prettier@3.9.6 --print-width 120 --write <arquivos.css>
   ```
 
 - Formate apenas os arquivos da sua alteração; não reformate arquivos alheios,
