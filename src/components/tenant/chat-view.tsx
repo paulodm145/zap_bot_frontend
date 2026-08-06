@@ -17,6 +17,12 @@ import styles from './chat-view.module.css';
 
 type PendingSend = { conversationId: string; text: string; key: string };
 
+const views = [
+  { value: 'FILA', label: 'Fila' },
+  { value: 'MINHAS', label: 'Minhas' },
+  { value: 'ENCERRADA', label: 'Encerradas' },
+] as const;
+
 export function ChatView() {
   const [view, setView] = useState('FILA');
   const [selected, setSelected] = useState<string>();
@@ -65,9 +71,11 @@ export function ChatView() {
       <div className={styles.workspace}>
         <aside className={styles.list}>
           <div className={styles.tabs}>
-            <button onClick={() => setView('FILA')}>Fila</button>
-            <button onClick={() => setView('MINHAS')}>Minhas</button>
-            <button onClick={() => setView('ENCERRADA')}>Encerradas</button>
+            {views.map((item) => (
+              <button key={item.value} onClick={() => setView(item.value)} aria-pressed={view === item.value}>
+                {item.label}
+              </button>
+            ))}
           </div>
           {list.data?.dados.map((item) => (
             <button
@@ -139,7 +147,7 @@ export function ChatView() {
         )}
       </div>
       {!realtime.authorized && <p role="alert">Você não tem mais acesso a essa conversa. A lista foi atualizada.</p>}
-      {error && <p>{isApiError(error) ? error.message : 'Falha no atendimento.'}</p>}
+      {error && <p role="alert">{isApiError(error) ? error.message : 'Falha no atendimento.'}</p>}
     </AppShell>
   );
 }

@@ -1,4 +1,4 @@
-import { ApiError } from './api-error';
+import { apiErrorFromResponse } from './api-error';
 import type { ApiErrorBody } from './types';
 import { sessionStore } from '@/lib/auth/session-store';
 
@@ -18,12 +18,6 @@ async function readError(response: Response): Promise<ApiErrorBody> {
   }
 }
 
-function apiError(response: Response, body: ApiErrorBody) {
-  const retryAfter = response.headers.get('Retry-After');
-  const retryAfterSeconds = retryAfter && /^\d+$/.test(retryAfter) ? Number(retryAfter) : undefined;
-  return new ApiError(response.status, body, response.headers.get('X-Correlation-Id') ?? undefined, retryAfterSeconds);
-}
-
 export async function refreshAccessToken() {
   if (!refreshRequest) {
     refreshRequest = fetch(`${API_URL}/auth/refresh`, {
@@ -32,7 +26,7 @@ export async function refreshAccessToken() {
       headers: { Accept: 'application/json' },
     })
       .then(async (response) => {
-        if (!response.ok) throw apiError(response, await readError(response));
+        if (!response.ok) throw apiErrorFromResponse(response, await readError(response));
         const body = (await response.json()) as { accessToken: string };
         sessionStore.replaceToken(body.accessToken);
         return body.accessToken;
@@ -71,7 +65,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
 
   if (!response.ok) {
     if (response.status === 401 && auth) sessionStore.clear();
-    throw apiError(response, await readError(response));
+    throw apiErrorFromResponse(response, await readError(response));
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;

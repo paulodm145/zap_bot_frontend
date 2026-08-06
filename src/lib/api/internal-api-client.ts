@@ -1,4 +1,4 @@
-import { ApiError } from './api-error';
+import { apiErrorFromResponse } from './api-error';
 import type { ApiErrorBody } from './types';
 import { internalSessionStore } from '@/lib/internal-auth/internal-session-store';
 
@@ -26,11 +26,7 @@ export async function internalApiRequest<T>(path: string, options: RequestInit =
   });
   if (!response.ok) {
     if (response.status === 401 && authenticated) internalSessionStore.clear();
-    throw new ApiError(
-      response.status,
-      await readError(response),
-      response.headers.get('X-Correlation-Id') ?? undefined,
-    );
+    throw apiErrorFromResponse(response, await readError(response));
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;

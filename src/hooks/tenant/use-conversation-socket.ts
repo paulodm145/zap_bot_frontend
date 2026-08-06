@@ -23,5 +23,8 @@ export function useConversationSocket(conversationId?: string) {
     });
   }, [connected, conversationId, queryClient, socket]);
 
-  return { connected, authorized: deniedConversationId !== conversationId, presence };
+  // Sem conversa selecionada não há acesso a negar: comparar dois `undefined`
+  // marcava a tela como não autorizada antes de qualquer interação.
+  const authorized = conversationId === undefined || deniedConversationId !== conversationId;
+  return { connected, authorized, presence };
 }
