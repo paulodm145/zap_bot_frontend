@@ -12,7 +12,8 @@ export function useProvisionTenant() {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: (input: ProvisionTenantInput) => internalApiRequest<ProvisionResponse>('/interno/tenants', { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: (input: ProvisionTenantInput) =>
+      internalApiRequest<ProvisionResponse>('/interno/tenants', { method: 'POST', body: JSON.stringify(input) }),
     async onSuccess(response) {
       await queryClient.invalidateQueries({ queryKey: internalTenantKeys.all });
       const id = response?.public_id ?? response?.tenant?.public_id;

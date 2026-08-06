@@ -6,7 +6,10 @@ import type { BackendPage } from '@/lib/api/types';
 import type { FlowStatusFilter, FlowSummary } from '@/features/flows/types';
 
 export type FlowListParams = { skip: number; take: number; search?: string; status?: FlowStatusFilter };
-export const flowKeys = { all: ['flows'] as const, list: (params: FlowListParams) => ['flows', 'list', params] as const };
+export const flowKeys = {
+  all: ['flows'] as const,
+  list: (params: FlowListParams) => ['flows', 'list', params] as const,
+};
 
 export function useFlows(params: FlowListParams) {
   return useQuery({

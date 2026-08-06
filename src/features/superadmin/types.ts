@@ -1,4 +1,5 @@
-export type TenantStatus = 'AGUARDANDO_PAGAMENTO' | 'PROVISIONANDO' | 'ATIVO' | 'SUSPENSO' | 'CANCELADO' | 'FALHA_PROVISIONAMENTO';
+export type TenantStatus =
+  'AGUARDANDO_PAGAMENTO' | 'PROVISIONANDO' | 'ATIVO' | 'SUSPENSO' | 'CANCELADO' | 'FALHA_PROVISIONAMENTO';
 export type TenantProvisioningStep = 'REGISTRO_CENTRAL_CRIADO' | 'BANCO_CRIADO' | 'MIGRATIONS_APLICADAS' | 'CONCLUIDO';
 
 export type InternalTenantSummary = {
@@ -29,7 +30,28 @@ export type ProvisionTenantInput = {
   administrador: { nome: string; email: string; senha: string };
 };
 
-export type InternalTenantUser = { public_id: string; nome: string; email: string; papel?: string; ativo?: boolean; created_at?: string };
-export type InternalTenantSubscription = { public_id: string; status: string; tipo?: string; plano?: { public_id?: string; nome?: string }; created_at: string; cancelado_at?: string | null };
-export type InternalTenantDetail = InternalTenantSummary & { mensagem_falha?: string | null; banco_nome?: string | null };
-export type InternalTenantDetailResponse = { tenant: InternalTenantDetail; usuarios: InternalTenantUser[]; assinaturas: InternalTenantSubscription[] };
+export type InternalTenantUser = {
+  public_id: string;
+  nome: string;
+  email: string;
+  papel?: string;
+  ativo?: boolean;
+  created_at?: string;
+};
+export type InternalTenantSubscription = {
+  public_id: string;
+  status: string;
+  tipo?: string;
+  plano?: { public_id?: string; nome?: string };
+  created_at: string;
+  cancelado_at?: string | null;
+};
+export type InternalTenantDetail = InternalTenantSummary & {
+  mensagem_falha?: string | null;
+  banco_nome?: string | null;
+};
+export type InternalTenantDetailResponse = {
+  tenant: InternalTenantDetail;
+  usuarios: InternalTenantUser[];
+  assinaturas: InternalTenantSubscription[];
+};

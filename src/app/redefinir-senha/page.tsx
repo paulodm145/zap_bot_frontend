@@ -5,5 +5,11 @@ import { PasswordResetForm } from '@/components/auth/password-reset-form';
 
 export const metadata: Metadata = { title: 'Redefinir senha' };
 export default function PasswordResetPage() {
-  return <AuthShell><Suspense fallback={<p>Carregando...</p>}><PasswordResetForm /></Suspense></AuthShell>;
+  return (
+    <AuthShell>
+      <Suspense fallback={<p>Carregando...</p>}>
+        <PasswordResetForm />
+      </Suspense>
+    </AuthShell>
+  );
 }

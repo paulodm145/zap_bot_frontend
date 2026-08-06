@@ -5,12 +5,22 @@ import { useRouter } from 'next/navigation';
 import { internalApiRequest } from '@/lib/api/internal-api-client';
 import { internalSessionStore } from '@/lib/internal-auth/internal-session-store';
 
-type InternalLoginResponse = { exigeSegundoFator: boolean; exigeConfiguracao?: boolean; estadoToken?: string; accessToken?: string };
+type InternalLoginResponse = {
+  exigeSegundoFator: boolean;
+  exigeConfiguracao?: boolean;
+  estadoToken?: string;
+  accessToken?: string;
+};
 
 export function useInternalLogin() {
   const router = useRouter();
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) => internalApiRequest<InternalLoginResponse>('/interno/auth/login', { method: 'POST', body: JSON.stringify({ email: email.trim().toLowerCase(), senha: password }) }, false),
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      internalApiRequest<InternalLoginResponse>(
+        '/interno/auth/login',
+        { method: 'POST', body: JSON.stringify({ email: email.trim().toLowerCase(), senha: password }) },
+        false,
+      ),
     onSuccess(response) {
       if (!response.exigeSegundoFator && response.accessToken) {
         internalSessionStore.authenticate(response.accessToken);

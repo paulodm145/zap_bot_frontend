@@ -23,24 +23,77 @@ export function LoginForm() {
       if (isApiError(error) && error.code === 'CREDENCIAIS_INVALIDAS') setPassword('');
     }
   }
-  const errorMessage = login.error ? (isApiError(login.error) && login.error.status === 429
-    ? `Muitas tentativas. Tente novamente${login.error.retryAfterSeconds ? ` em ${login.error.retryAfterSeconds} segundos` : ' mais tarde'}.`
-    : isApiError(login.error) ? login.error.message : 'Não foi possível conectar ao servidor. Tente novamente.') : null;
+  const errorMessage = login.error
+    ? isApiError(login.error) && login.error.status === 429
+      ? `Muitas tentativas. Tente novamente${login.error.retryAfterSeconds ? ` em ${login.error.retryAfterSeconds} segundos` : ' mais tarde'}.`
+      : isApiError(login.error)
+        ? login.error.message
+        : 'Não foi possível conectar ao servidor. Tente novamente.'
+    : null;
   return (
     <div className={`${styles.formCard} page-enter`}>
-      <div className={styles.mobileLogo}><span>zapbot</span></div>
-      <header><span className={styles.step}>ACESSO SEGURO</span><h2>Que bom ter você de volta</h2><p>Entre para gerenciar seus fluxos e conversas.</p></header>
+      <div className={styles.mobileLogo}>
+        <span>zapbot</span>
+      </div>
+      <header>
+        <span className={styles.step}>ACESSO SEGURO</span>
+        <h2>Que bom ter você de volta</h2>
+        <p>Entre para gerenciar seus fluxos e conversas.</p>
+      </header>
       <form onSubmit={submit} className={styles.form}>
-        <Input label="E-mail" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com.br" autoComplete="email" required disabled={login.isPending} icon={<Mail size={17} />} />
+        <Input
+          label="E-mail"
+          name="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="voce@empresa.com.br"
+          autoComplete="email"
+          required
+          disabled={login.isPending}
+          icon={<Mail size={17} />}
+        />
         <div className={styles.passwordField}>
-          <Input label="Senha" name="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Digite sua senha" autoComplete="current-password" required disabled={login.isPending} icon={<LockKeyhole size={17} />} />
-          <button type="button" className={styles.eye} onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
+          <Input
+            label="Senha"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Digite sua senha"
+            autoComplete="current-password"
+            required
+            disabled={login.isPending}
+            icon={<LockKeyhole size={17} />}
+          />
+          <button
+            type="button"
+            className={styles.eye}
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+          >
+            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
         </div>
-        <div className={styles.formMeta}><label><input type="checkbox" /> Lembrar de mim</label><Link href="/recuperar-senha">Esqueci minha senha</Link></div>
-        {errorMessage && <div className={styles.formError} role="alert">{errorMessage}</div>}
-        <Button type="submit" disabled={login.isPending}>{login.isPending ? 'Entrando...' : 'Entrar'}<ArrowRight size={17} /></Button>
+        <div className={styles.formMeta}>
+          <label>
+            <input type="checkbox" /> Lembrar de mim
+          </label>
+          <Link href="/recuperar-senha">Esqueci minha senha</Link>
+        </div>
+        {errorMessage && (
+          <div className={styles.formError} role="alert">
+            {errorMessage}
+          </div>
+        )}
+        <Button type="submit" disabled={login.isPending}>
+          {login.isPending ? 'Entrando...' : 'Entrar'}
+          <ArrowRight size={17} />
+        </Button>
       </form>
-      <p className={styles.help}>Ainda não possui acesso? <a href="mailto:contato@zapbot.com.br">Fale com nossa equipe</a></p>
+      <p className={styles.help}>
+        Ainda não possui acesso? <a href="mailto:contato@zapbot.com.br">Fale com nossa equipe</a>
+      </p>
     </div>
   );
 }
@@ -58,12 +111,53 @@ export function RecoveryForm() {
       // O erro é apresentado sem alterar o e-mail digitado.
     }
   }
-  const recoveryError = recovery.error ? (isApiError(recovery.error) && recovery.error.status === 429 ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.' : 'Não foi possível enviar as instruções agora. Tente novamente.') : null;
+  const recoveryError = recovery.error
+    ? isApiError(recovery.error) && recovery.error.status === 429
+      ? 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.'
+      : 'Não foi possível enviar as instruções agora. Tente novamente.'
+    : null;
   return (
     <div className={`${styles.formCard} page-enter`}>
-      <header><span className={styles.step}>RECUPERAÇÃO DE ACESSO</span><h2>{sent ? 'Confira seu e-mail' : 'Recupere sua senha'}</h2><p>{sent ? 'Se o endereço estiver cadastrado, você receberá as instruções em instantes.' : 'Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.'}</p></header>
-      {!sent ? <form onSubmit={submitRecovery} className={styles.form}><Input label="E-mail de acesso" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com.br" required disabled={recovery.isPending} icon={<Mail size={17} />} />{recoveryError && <div className={styles.formError} role="alert">{recoveryError}</div>}<Button type="submit" disabled={recovery.isPending}>{recovery.isPending ? 'Enviando...' : 'Enviar instruções'}<ArrowRight size={17} /></Button></form> : <div className={styles.sentIcon}><Mail size={28} /></div>}
-      <Link className={styles.backLink} href="/login">← Voltar para o login</Link>
+      <header>
+        <span className={styles.step}>RECUPERAÇÃO DE ACESSO</span>
+        <h2>{sent ? 'Confira seu e-mail' : 'Recupere sua senha'}</h2>
+        <p>
+          {sent
+            ? 'Se o endereço estiver cadastrado, você receberá as instruções em instantes.'
+            : 'Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.'}
+        </p>
+      </header>
+      {!sent ? (
+        <form onSubmit={submitRecovery} className={styles.form}>
+          <Input
+            label="E-mail de acesso"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="voce@empresa.com.br"
+            required
+            disabled={recovery.isPending}
+            icon={<Mail size={17} />}
+          />
+          {recoveryError && (
+            <div className={styles.formError} role="alert">
+              {recoveryError}
+            </div>
+          )}
+          <Button type="submit" disabled={recovery.isPending}>
+            {recovery.isPending ? 'Enviando...' : 'Enviar instruções'}
+            <ArrowRight size={17} />
+          </Button>
+        </form>
+      ) : (
+        <div className={styles.sentIcon}>
+          <Mail size={28} />
+        </div>
+      )}
+      <Link className={styles.backLink} href="/login">
+        ← Voltar para o login
+      </Link>
     </div>
   );
 }

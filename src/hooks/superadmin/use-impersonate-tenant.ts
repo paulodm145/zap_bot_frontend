@@ -16,10 +16,15 @@ export function useImpersonateTenant(tenantId: string, tenantName: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => internalApiRequest<ImpersonationResponse>(`/interno/tenants/${encodeURIComponent(tenantId)}/impersonar`, { method: 'POST' }),
+    mutationFn: () =>
+      internalApiRequest<ImpersonationResponse>(`/interno/tenants/${encodeURIComponent(tenantId)}/impersonar`, {
+        method: 'POST',
+      }),
     onSuccess(response) {
       const user: SessionUser = {
-        id: response.usuario.public_id ?? response.usuario.id ?? '', nome: response.usuario.nome, email: response.usuario.email,
+        id: response.usuario.public_id ?? response.usuario.id ?? '',
+        nome: response.usuario.nome,
+        email: response.usuario.email,
         tenantId: response.usuario.tenant_id ?? response.tenant?.public_id ?? tenantId,
       };
       sessionStore.impersonate(response.accessToken, user, {

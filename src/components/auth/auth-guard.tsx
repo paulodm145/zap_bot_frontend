@@ -14,15 +14,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!requiresRestoration) return;
     let active = true;
-    void restoreSession().then(() => {
-      if (active) setChecking(false);
-    }).catch(() => {
-      if (active) {
-        setChecking(false);
-        router.replace('/login');
-      }
-    });
-    return () => { active = false; };
+    void restoreSession()
+      .then(() => {
+        if (active) setChecking(false);
+      })
+      .catch(() => {
+        if (active) {
+          setChecking(false);
+          router.replace('/login');
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [requiresRestoration, router]);
 
   useEffect(() => {
@@ -30,7 +34,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [checking, router, session.status]);
 
   if (checking || session.status !== 'authenticated') {
-    return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 13 }}>Verificando sessão...</main>;
+    return (
+      <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: 'var(--muted)', fontSize: 13 }}>
+        Verificando sessão...
+      </main>
+    );
   }
   return children;
 }

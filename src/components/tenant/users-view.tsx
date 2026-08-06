@@ -1,13 +1,209 @@
 'use client';
-import { useMemo,useState } from 'react';import { Edit3,Plus,Search,Trash2,UserRound } from 'lucide-react';import { AppShell } from '@/components/layout/app-shell';import { Button } from '@/components/ui/button';import { DataTable,type DataTableColumn } from '@/components/ui/data-table';import { FeedbackToast } from '@/components/ui/feedback-toast';import { ToggleSwitch } from '@/components/ui/toggle-switch';import { CrudModal } from './crud-modal';import { useCreateUser,useDeleteUser,useUpdateUser,useUsers,useUserStatus } from '@/hooks/tenant/use-users';import { useDebouncedValue } from '@/hooks/common/use-debounced-value';import type { Role,TenantUser } from '@/features/tenant/types';import { isApiError } from '@/lib/api/api-error';import styles from './tenant.module.css';
-const roleLabel:Record<Role,string>={ADMIN_TENANT:'Administrador',GESTOR:'Gestor',ATENDENTE:'Atendente'};
-export function UsersView(){
-  const[search,setSearch]=useState(''),[skip,setSkip]=useState(0),[take,setTake]=useState(20),[editing,setEditing]=useState<TenantUser|null|undefined>(undefined),[nome,setNome]=useState(''),[email,setEmail]=useState(''),[senha,setSenha]=useState(''),[papel,setPapel]=useState<Role>('ATENDENTE');
-  const list=useUsers(useDebouncedValue(search),skip,take),create=useCreateUser(),update=useUpdateUser(),status=useUserStatus(),remove=useDeleteUser();
-  function open(user:TenantUser|null){setEditing(user);setNome(user?.nome??'');setEmail(user?.email??'');setSenha('');setPapel(user?.papel??'ATENDENTE')}
-  const columns=useMemo<DataTableColumn<TenantUser>[]>(()=>[{id:'name',header:'Usuário',width:'31%',render:u=><div className={styles.entity}><span><UserRound size={16}/></span><div><strong>{u.nome}</strong><small>{u.email}</small></div></div>},{id:'role',header:'Papel',width:'19%',render:u=>roleLabel[u.papel]},{id:'sectors',header:'Setores',width:'24%',hideOnMobile:true,render:u=>u.setores?.map(s=>s.nome).join(', ')||'Sem setor'},{id:'active',header:'Ativo',width:'12%',align:'center',render:u=><ToggleSwitch checked={u.ativo} disabled={status.isPending&&status.variables?.id===u.public_id} onCheckedChange={ativo=>status.mutate({id:u.public_id,ativo})} label={`${u.ativo?'Desativar':'Ativar'} ${u.nome}`}/>}],[status]);
-  const error=list.error??status.error??remove.error;
-  const formError=editing?update.error:create.error;
-  const saving=editing?update.isPending:create.isPending;
-  return <AppShell title="Usuários" subtitle="Acessos, papéis e situação das contas." actions={<Button icon={<Plus size={17}/>} onClick={()=>open(null)}>Novo usuário</Button>}>{error&&<FeedbackToast key={isApiError(error)?`${error.code}-${error.correlationId??error.message}`:'unexpected'} error={error} title={status.error?'Não foi possível alterar o status':remove.error?'Não foi possível excluir o usuário':'Não foi possível carregar os usuários'}/>}<DataTable columns={columns} data={list.data?.dados??[]} getRowId={u=>u.public_id} pagination={{skip:list.data?.skip??skip,take:list.data?.take??take,total:list.data?.total??0}} onPaginationChange={p=>{setSkip(p.skip);setTake(p.take)}} loading={list.isLoading||list.isFetching} emptyTitle="Nenhum usuário encontrado" emptyDescription="Cadastre a primeira pessoa ou altere a busca." toolbar={<label className={styles.search}><Search size={15}/><input value={search} onChange={e=>{setSearch(e.target.value);setSkip(0)}} placeholder="Buscar usuário..."/></label>} rowActions={u=><><Button variant="ghost" size="icon" icon={<Edit3 size={16}/>} aria-label={`Editar ${u.nome}`} onClick={()=>open(u)}/><Button variant="ghost" size="icon" icon={<Trash2 size={16}/>} aria-label={`Excluir ${u.nome}`} onClick={()=>{if(confirm(`Excluir ${u.nome}?`))remove.mutate(u.public_id)}}/></>}/>{editing!==undefined&&<CrudModal title={editing?'Editar usuário':'Novo usuário'} subtitle={editing?'Atualize os dados e o nível de acesso.':'Crie o acesso e defina o nível de permissão inicial.'} submitLabel={editing?'Salvar alterações':'Cadastrar usuário'} pending={saving} error={formError?(isApiError(formError)?formError.message:'Não foi possível salvar.'):null} onClose={()=>setEditing(undefined)} onSubmit={event=>{event.preventDefault();if(editing)update.mutate({id:editing.public_id,nome,email,papel},{onSuccess:()=>setEditing(undefined)});else create.mutate({nome:nome.trim(),email:email.trim().toLowerCase(),senha,papel},{onSuccess:()=>setEditing(undefined)})}}><div className={styles.form}><label className={styles.wide}><span>Nome completo</span><input value={nome} onChange={e=>setNome(e.target.value)} minLength={2} maxLength={150} required/></label><label><span>E-mail</span><input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label><span>Papel</span><select value={papel} onChange={e=>setPapel(e.target.value as Role)}><option value="ATENDENTE">Atendente</option><option value="GESTOR">Gestor</option><option value="ADMIN_TENANT">Administrador</option></select></label>{!editing&&<label className={styles.wide}><span>Senha inicial</span><input type="password" value={senha} onChange={e=>setSenha(e.target.value)} minLength={12} required autoComplete="new-password"/><small>12 caracteres ou mais, com maiúscula, minúscula e número.</small></label>}</div></CrudModal>}</AppShell>;
+import { useMemo, useState } from 'react';
+import { Edit3, Plus, Search, Trash2, UserRound } from 'lucide-react';
+import { AppShell } from '@/components/layout/app-shell';
+import { Button } from '@/components/ui/button';
+import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { FeedbackToast } from '@/components/ui/feedback-toast';
+import { ToggleSwitch } from '@/components/ui/toggle-switch';
+import { CrudModal } from './crud-modal';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers, useUserStatus } from '@/hooks/tenant/use-users';
+import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
+import type { Role, TenantUser } from '@/features/tenant/types';
+import { isApiError } from '@/lib/api/api-error';
+import styles from './tenant.module.css';
+const roleLabel: Record<Role, string> = { ADMIN_TENANT: 'Administrador', GESTOR: 'Gestor', ATENDENTE: 'Atendente' };
+export function UsersView() {
+  const [search, setSearch] = useState(''),
+    [skip, setSkip] = useState(0),
+    [take, setTake] = useState(20),
+    [editing, setEditing] = useState<TenantUser | null | undefined>(undefined),
+    [nome, setNome] = useState(''),
+    [email, setEmail] = useState(''),
+    [senha, setSenha] = useState(''),
+    [papel, setPapel] = useState<Role>('ATENDENTE');
+  const list = useUsers(useDebouncedValue(search), skip, take),
+    create = useCreateUser(),
+    update = useUpdateUser(),
+    status = useUserStatus(),
+    remove = useDeleteUser();
+  function open(user: TenantUser | null) {
+    setEditing(user);
+    setNome(user?.nome ?? '');
+    setEmail(user?.email ?? '');
+    setSenha('');
+    setPapel(user?.papel ?? 'ATENDENTE');
+  }
+  const columns = useMemo<DataTableColumn<TenantUser>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Usuário',
+        width: '31%',
+        render: (u) => (
+          <div className={styles.entity}>
+            <span>
+              <UserRound size={16} />
+            </span>
+            <div>
+              <strong>{u.nome}</strong>
+              <small>{u.email}</small>
+            </div>
+          </div>
+        ),
+      },
+      { id: 'role', header: 'Papel', width: '19%', render: (u) => roleLabel[u.papel] },
+      {
+        id: 'sectors',
+        header: 'Setores',
+        width: '24%',
+        hideOnMobile: true,
+        render: (u) => u.setores?.map((s) => s.nome).join(', ') || 'Sem setor',
+      },
+      {
+        id: 'active',
+        header: 'Ativo',
+        width: '12%',
+        align: 'center',
+        render: (u) => (
+          <ToggleSwitch
+            checked={u.ativo}
+            disabled={status.isPending && status.variables?.id === u.public_id}
+            onCheckedChange={(ativo) => status.mutate({ id: u.public_id, ativo })}
+            label={`${u.ativo ? 'Desativar' : 'Ativar'} ${u.nome}`}
+          />
+        ),
+      },
+    ],
+    [status],
+  );
+  const error = list.error ?? status.error ?? remove.error;
+  const formError = editing ? update.error : create.error;
+  const saving = editing ? update.isPending : create.isPending;
+  return (
+    <AppShell
+      title="Usuários"
+      subtitle="Acessos, papéis e situação das contas."
+      actions={
+        <Button icon={<Plus size={17} />} onClick={() => open(null)}>
+          Novo usuário
+        </Button>
+      }
+    >
+      {error && (
+        <FeedbackToast
+          key={isApiError(error) ? `${error.code}-${error.correlationId ?? error.message}` : 'unexpected'}
+          error={error}
+          title={
+            status.error
+              ? 'Não foi possível alterar o status'
+              : remove.error
+                ? 'Não foi possível excluir o usuário'
+                : 'Não foi possível carregar os usuários'
+          }
+        />
+      )}
+      <DataTable
+        columns={columns}
+        data={list.data?.dados ?? []}
+        getRowId={(u) => u.public_id}
+        pagination={{ skip: list.data?.skip ?? skip, take: list.data?.take ?? take, total: list.data?.total ?? 0 }}
+        onPaginationChange={(p) => {
+          setSkip(p.skip);
+          setTake(p.take);
+        }}
+        loading={list.isLoading || list.isFetching}
+        emptyTitle="Nenhum usuário encontrado"
+        emptyDescription="Cadastre a primeira pessoa ou altere a busca."
+        toolbar={
+          <label className={styles.search}>
+            <Search size={15} />
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setSkip(0);
+              }}
+              placeholder="Buscar usuário..."
+            />
+          </label>
+        }
+        rowActions={(u) => (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={<Edit3 size={16} />}
+              aria-label={`Editar ${u.nome}`}
+              onClick={() => open(u)}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={<Trash2 size={16} />}
+              aria-label={`Excluir ${u.nome}`}
+              onClick={() => {
+                if (confirm(`Excluir ${u.nome}?`)) remove.mutate(u.public_id);
+              }}
+            />
+          </>
+        )}
+      />
+      {editing !== undefined && (
+        <CrudModal
+          title={editing ? 'Editar usuário' : 'Novo usuário'}
+          subtitle={
+            editing ? 'Atualize os dados e o nível de acesso.' : 'Crie o acesso e defina o nível de permissão inicial.'
+          }
+          submitLabel={editing ? 'Salvar alterações' : 'Cadastrar usuário'}
+          pending={saving}
+          error={formError ? (isApiError(formError) ? formError.message : 'Não foi possível salvar.') : null}
+          onClose={() => setEditing(undefined)}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (editing)
+              update.mutate({ id: editing.public_id, nome, email, papel }, { onSuccess: () => setEditing(undefined) });
+            else
+              create.mutate(
+                { nome: nome.trim(), email: email.trim().toLowerCase(), senha, papel },
+                { onSuccess: () => setEditing(undefined) },
+              );
+          }}
+        >
+          <div className={styles.form}>
+            <label className={styles.wide}>
+              <span>Nome completo</span>
+              <input value={nome} onChange={(e) => setNome(e.target.value)} minLength={2} maxLength={150} required />
+            </label>
+            <label>
+              <span>E-mail</span>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>
+              <span>Papel</span>
+              <select value={papel} onChange={(e) => setPapel(e.target.value as Role)}>
+                <option value="ATENDENTE">Atendente</option>
+                <option value="GESTOR">Gestor</option>
+                <option value="ADMIN_TENANT">Administrador</option>
+              </select>
+            </label>
+            {!editing && (
+              <label className={styles.wide}>
+                <span>Senha inicial</span>
+                <input
+                  type="password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  minLength={12}
+                  required
+                  autoComplete="new-password"
+                />
+                <small>12 caracteres ou mais, com maiúscula, minúscula e número.</small>
+              </label>
+            )}
+          </div>
+        </CrudModal>
+      )}
+    </AppShell>
+  );
 }

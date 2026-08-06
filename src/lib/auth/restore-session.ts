@@ -15,12 +15,14 @@ export function restoreSession() {
         email: me.email,
         tenantId: me.tenant.public_id,
       });
-    })().catch((error: unknown) => {
-      sessionStore.clear();
-      throw error;
-    }).finally(() => {
-      restoreRequest = null;
-    });
+    })()
+      .catch((error: unknown) => {
+        sessionStore.clear();
+        throw error;
+      })
+      .finally(() => {
+        restoreRequest = null;
+      });
   }
   return restoreRequest;
 }

@@ -10,7 +10,10 @@ export function useSaveFlow(flowId?: string) {
   return useMutation({
     mutationFn: ({ name, definition }: { name: string; definition: FlowDefinition }) => {
       if (!flowId) throw new Error('Fluxo sem identificador para salvamento remoto.');
-      return apiRequest<FlowDetail>(`/fluxos/${flowId}`, { method: 'PUT', body: JSON.stringify({ nome: name, definicao: definition }) });
+      return apiRequest<FlowDetail>(`/fluxos/${flowId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ nome: name, definicao: definition }),
+      });
     },
     async onSuccess() {
       await Promise.all([

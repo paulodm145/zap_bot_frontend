@@ -12,7 +12,7 @@ type ApiOptions = RequestInit & {
 
 async function readError(response: Response): Promise<ApiErrorBody> {
   try {
-    return await response.json() as ApiErrorBody;
+    return (await response.json()) as ApiErrorBody;
   } catch {
     return { erro: { codigo: 'ERRO_HTTP', mensagem: `A requisição falhou com status ${response.status}` } };
   }
@@ -30,17 +30,20 @@ export async function refreshAccessToken() {
       method: 'POST',
       credentials: 'include',
       headers: { Accept: 'application/json' },
-    }).then(async (response) => {
-      if (!response.ok) throw apiError(response, await readError(response));
-      const body = await response.json() as { accessToken: string };
-      sessionStore.replaceToken(body.accessToken);
-      return body.accessToken;
-    }).catch((error: unknown) => {
-      sessionStore.clear();
-      throw error;
-    }).finally(() => {
-      refreshRequest = null;
-    });
+    })
+      .then(async (response) => {
+        if (!response.ok) throw apiError(response, await readError(response));
+        const body = (await response.json()) as { accessToken: string };
+        sessionStore.replaceToken(body.accessToken);
+        return body.accessToken;
+      })
+      .catch((error: unknown) => {
+        sessionStore.clear();
+        throw error;
+      })
+      .finally(() => {
+        refreshRequest = null;
+      });
   }
   return refreshRequest;
 }
@@ -71,5 +74,5 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
     throw apiError(response, await readError(response));
   }
   if (response.status === 204) return undefined as T;
-  return await response.json() as T;
+  return (await response.json()) as T;
 }

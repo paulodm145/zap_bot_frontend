@@ -8,5 +8,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export function Button({ variant = 'primary', size = 'md', icon, className = '', children, ...props }: ButtonProps) {
-  return <button className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`} {...props}>{icon}{children}</button>;
+  return (
+    <button className={`${styles.button} ${styles[variant]} ${styles[size]} ${className}`} {...props}>
+      {icon}
+      {children}
+    </button>
+  );
 }

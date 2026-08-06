@@ -1,1 +1,4 @@
-import { UsersView } from '@/components/tenant/users-view';export default function Page(){return <UsersView/>}
+import { UsersView } from '@/components/tenant/users-view';
+export default function Page() {
+  return <UsersView />;
+}

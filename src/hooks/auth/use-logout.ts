@@ -9,12 +9,15 @@ export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: () => sessionStore.getSnapshot().impersonation ? Promise.resolve() : apiRequest<void>('/auth/logout', {
-      method: 'POST',
-      auth: false,
-      retryAuth: false,
-      credentials: 'include',
-    }),
+    mutationFn: () =>
+      sessionStore.getSnapshot().impersonation
+        ? Promise.resolve()
+        : apiRequest<void>('/auth/logout', {
+            method: 'POST',
+            auth: false,
+            retryAuth: false,
+            credentials: 'include',
+          }),
     onSettled() {
       const wasImpersonating = Boolean(sessionStore.getSnapshot().impersonation);
       sessionStore.clear();

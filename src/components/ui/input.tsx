@@ -8,7 +8,10 @@ export function Input({ label, hint, icon, id, ...props }: InputProps) {
   return (
     <label className={styles.field} htmlFor={inputId}>
       <span className={styles.label}>{label}</span>
-      <span className={styles.inputWrap}>{icon}<input id={inputId} {...props} /></span>
+      <span className={styles.inputWrap}>
+        {icon}
+        <input id={inputId} {...props} />
+      </span>
       {hint && <span className={styles.hint}>{hint}</span>}
     </label>
   );

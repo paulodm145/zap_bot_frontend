@@ -5,13 +5,21 @@ export type InternalSessionState = {
   status: 'anonymous' | 'second_factor' | 'authenticated';
 };
 
-let state: InternalSessionState = { accessToken: null, stateToken: null, requiresConfiguration: false, status: 'anonymous' };
+let state: InternalSessionState = {
+  accessToken: null,
+  stateToken: null,
+  requiresConfiguration: false,
+  status: 'anonymous',
+};
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 
 export const internalSessionStore = {
   getSnapshot: () => state,
-  subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
   startSecondFactor(stateToken: string, requiresConfiguration: boolean) {
     state = { accessToken: null, stateToken, requiresConfiguration, status: 'second_factor' };
     emit();

@@ -5,11 +5,18 @@ import { useState } from 'react';
 import { SocketProvider } from '@/lib/realtime/socket-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
-      mutations: { retry: false },
-    },
-  }));
-  return <QueryClientProvider client={queryClient}><SocketProvider>{children}</SocketProvider></QueryClientProvider>;
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
+          mutations: { retry: false },
+        },
+      }),
+  );
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SocketProvider>{children}</SocketProvider>
+    </QueryClientProvider>
+  );
 }

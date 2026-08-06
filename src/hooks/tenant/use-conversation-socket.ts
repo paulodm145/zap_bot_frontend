@@ -15,7 +15,7 @@ export function useConversationSocket(conversationId?: string) {
     if (!socket || !connected || !conversationId) return;
     socket.emit('conversa:entrar', conversationId, (response: JoinResponse) => {
       if (response?.ok) {
-        setDeniedConversationId((current) => current === conversationId ? undefined : current);
+        setDeniedConversationId((current) => (current === conversationId ? undefined : current));
         return;
       }
       setDeniedConversationId(conversationId);
