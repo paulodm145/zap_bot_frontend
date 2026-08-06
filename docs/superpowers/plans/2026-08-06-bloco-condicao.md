@@ -479,15 +479,19 @@ git commit -m "feat(flows): deriva arestas e variaveis disponiveis das regras"
 
 ---
 
-### Task 3: Conversão do contrato usando regras estruturadas
+### Task 3: Conversão do contrato e validação da condição
+
+Conversão e validação vivem nos mesmos dois arquivos e quebram os mesmos testes:
+separá-las obrigaria a commitar com a suíte vermelha, contra a regra global de
+rodar `npm test` antes de cada commit. São uma tarefa só, com um commit verde.
 
 **Files:**
-- Modify: `src/features/flows/flow-graph.ts:27-78` (`definitionToGraph`), `:128-166` (`graphToDefinition`)
+- Modify: `src/features/flows/flow-graph.ts:27-78` (`definitionToGraph`), `:92-126` (`validateGraph` e a constante `conditionPattern`), `:128-166` (`graphToDefinition`)
 - Test: `src/features/flows/flow-graph.test.ts`
 
 **Interfaces:**
-- Consumes: `parseRule`, `serializeRule` da Task 1.
-- Produces: `definitionToGraph` devolve blocos de condição com `data.regras` e `data.padraoId`, e **não** devolve mais arestas de condição; `graphToDefinition` serializa a partir de `data.regras` e `data.padraoId`.
+- Consumes: `parseRule`, `serializeRule`, `ordinal` da Task 1; `variaveisDisponiveis` da Task 2.
+- Produces: `definitionToGraph` devolve blocos de condição com `data.regras` e `data.padraoId`, e **não** devolve mais arestas de condição; `graphToDefinition` serializa a partir de `data.regras` e `data.padraoId`; `validateGraph(nodes, edges)` reporta as mensagens da tabela do Step 6, com a mesma assinatura de hoje — `edges` deve receber as arestas já derivadas.
 
 - [ ] **Step 1: Escreva o teste que falha**
 
@@ -650,33 +654,12 @@ Em `graphToDefinition`, substitua todo o ramo `if (node.data.kind === 'condition
       }
 ```
 
-- [ ] **Step 4: Rode os testes e confirme que passam**
+- [ ] **Step 4: Confirme o avanço da conversão**
 
 Run: `npm test -- src/features/flows/flow-graph.test.ts`
-Expected: PASS. Se o teste `accepts a condition with a rule and a default branch` (linhas 193-200) ou os de `condition rule expressions` (linhas 206-227) falharem, deixe-os falhando: eles serão reescritos na Task 4.
+Expected: os testes de conversão do Step 1 passam. Os testes de validação que dependem de rótulo de aresta (`accepts a condition with a rule and a default branch` e o bloco `condition rule expressions`) ainda falham — eles são reescritos no próximo passo, antes de qualquer commit.
 
-- [ ] **Step 5: Commite**
-
-```bash
-npx prettier@3.9.6 --single-quote --trailing-comma all --print-width 120 --write \
-  src/features/flows/flow-graph.ts src/features/flows/flow-graph.test.ts
-git add src/features/flows/flow-graph.ts src/features/flows/flow-graph.test.ts
-git commit -m "feat(flows): serializa a condicao a partir das regras estruturadas"
-```
-
----
-
-### Task 4: Validação da condição
-
-**Files:**
-- Modify: `src/features/flows/flow-graph.ts:92-126` (`validateGraph` e a constante `conditionPattern`)
-- Test: `src/features/flows/flow-graph.test.ts:185-227`
-
-**Interfaces:**
-- Consumes: `variaveisDisponiveis` da Task 2.
-- Produces: `validateGraph(nodes, edges)` com as mensagens da tabela abaixo. A assinatura não muda; `edges` deve receber as arestas já derivadas.
-
-- [ ] **Step 1: Escreva o teste que falha**
+- [ ] **Step 5: Escreva os testes de validação que falham**
 
 Em `src/features/flows/flow-graph.test.ts`, substitua os testes `rejects a condition with a single outgoing branch` e `accepts a condition with a rule and a default branch` (linhas 185-200) e todo o bloco `describe('condition rule expressions', ...)` (linhas 203-227) por:
 
@@ -767,12 +750,12 @@ Em `src/features/flows/flow-graph.test.ts`, substitua os testes `rejects a condi
   });
 ```
 
-- [ ] **Step 2: Rode o teste e confirme que falha**
+- [ ] **Step 6: Rode o teste e confirme que falha**
 
 Run: `npm test -- src/features/flows/flow-graph.test.ts`
 Expected: FAIL — a validação atual ainda cobra duas arestas de saída.
 
-- [ ] **Step 3: Implemente a validação**
+- [ ] **Step 7: Implemente a validação**
 
 Em `src/features/flows/flow-graph.ts`, remova a constante `conditionPattern` (linha 98) e acrescente ao import de `flow-rules`:
 
@@ -819,24 +802,24 @@ Dentro de `validateGraph`, substitua os dois ramos `else if (node.data.kind === 
 
 A variável local `outgoing` deixa de ser usada por esse ramo; mantenha-a apenas se outro ramo ainda a usar, caso contrário remova a declaração para o lint não acusar.
 
-- [ ] **Step 4: Rode os testes e confirme que passam**
+- [ ] **Step 8: Rode os testes e confirme que passam**
 
 Run: `npm test`
-Expected: PASS em toda a suíte.
+Expected: PASS em toda a suíte, sem nenhum teste pendente ou pulado.
 
-- [ ] **Step 5: Verifique e commite**
+- [ ] **Step 9: Verifique e commite**
 
 ```bash
 npx prettier@3.9.6 --single-quote --trailing-comma all --print-width 120 --write \
   src/features/flows/flow-graph.ts src/features/flows/flow-graph.test.ts
 npm run lint && npm run typecheck && npm test
 git add src/features/flows/flow-graph.ts src/features/flows/flow-graph.test.ts
-git commit -m "feat(flows): valida a condicao por regra e aponta o campo faltante"
+git commit -m "feat(flows): converte e valida a condicao pelas regras estruturadas"
 ```
 
 ---
 
-### Task 5: Catálogo tipado com operadores e limites
+### Task 4: Catálogo tipado com operadores e limites
 
 **Files:**
 - Modify: `src/hooks/flows/use-flow-block-catalog.ts`
@@ -941,7 +924,7 @@ git commit -m "feat(flows): tipa campos, conexoes e limites do catalogo de bloco
 
 ---
 
-### Task 6: Componente do construtor de regras
+### Task 5: Componente do construtor de regras
 
 **Files:**
 - Create: `src/components/fluxo/condition-rules-editor.tsx`
@@ -1312,13 +1295,13 @@ git commit -m "feat(ui): adiciona o construtor de regras do bloco de condicao"
 
 ---
 
-### Task 7: Integração no editor
+### Task 6: Integração no editor
 
 **Files:**
 - Modify: `src/components/fluxo/flow-editor.tsx`
 
 **Interfaces:**
-- Consumes: `rulesToEdges`, `variaveisDisponiveis` (Task 2), `limiteDeRegras` (Task 5), `ConditionRulesEditor` (Task 6).
+- Consumes: `rulesToEdges`, `variaveisDisponiveis` (Task 2), `limiteDeRegras` (Task 4), `ConditionRulesEditor` (Task 5).
 - Produces: nada consumido por tarefas seguintes.
 
 - [ ] **Step 1: Remova o protótipo de arestas rotuladas**
