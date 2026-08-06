@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { SocketProvider } from '@/lib/realtime/socket-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -10,5 +11,5 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       mutations: { retry: false },
     },
   }));
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><SocketProvider>{children}</SocketProvider></QueryClientProvider>;
 }
