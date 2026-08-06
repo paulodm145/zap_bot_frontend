@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api/api-client';
 import type { Conversation, Message, Page } from '@/features/tenant/types';
 const keys = ['tenant', 'conversations'] as const;
-export function useConversations(view: string) {
+// O Socket.IO já invalida estas chaves a cada evento. O polling permanece
+// apenas como rede de segurança enquanto o tempo real estiver desconectado.
+export function useConversations(view: string, realtime = false) {
   return useQuery({
     queryKey: [...keys, view],
     queryFn: ({ signal }) => apiRequest<Page<Conversation>>(`/conversas?skip=0&take=100&visao=${view}`, { signal }),
-    refetchInterval: 15000,
+    refetchInterval: realtime ? false : 15000,
   });
 }
 export function useConversation(id?: string) {
@@ -17,13 +19,13 @@ export function useConversation(id?: string) {
     enabled: !!id,
   });
 }
-export function useMessages(id?: string) {
+export function useMessages(id?: string, realtime = false) {
   return useQuery({
     queryKey: [...keys, id, 'messages'],
     queryFn: ({ signal }) =>
       apiRequest<{ dados: Message[]; proximoCursor?: string | null }>(`/conversas/${id}/mensagens?take=50`, { signal }),
     enabled: !!id,
-    refetchInterval: 8000,
+    refetchInterval: realtime ? false : 8000,
   });
 }
 function invalidate(c: ReturnType<typeof useQueryClient>, id: string) {

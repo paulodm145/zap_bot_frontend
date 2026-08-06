@@ -28,13 +28,13 @@ export function ChatView() {
   const [selected, setSelected] = useState<string>();
   const [text, setText] = useState('');
   const pendingSend = useRef<PendingSend | undefined>(undefined);
-  const list = useConversations(view);
+  const realtime = useConversationSocket(selected);
+  const list = useConversations(view, realtime.connected);
   const detail = useConversation(selected);
-  const messages = useMessages(selected);
+  const messages = useMessages(selected, realtime.connected);
   const assume = useAssumeConversation();
   const close = useCloseConversation();
   const send = useSendMessage();
-  const realtime = useConversationSocket(selected);
   const conversation = realtime.authorized
     ? (detail.data ?? list.data?.dados.find((item) => item.public_id === selected))
     : undefined;

@@ -14,6 +14,7 @@ export default defineConfig({
         'src/lib/api/api-client.ts',
         'src/lib/api/internal-api-client.ts',
         'src/lib/auth/session-store.ts',
+        'src/lib/auth/restore-session.ts',
         'src/lib/internal-auth/internal-session-store.ts',
       ],
     },
