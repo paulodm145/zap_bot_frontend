@@ -41,11 +41,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import styles from './flow-editor.module.css';
-import { definitionToGraph, graphToDefinition, type FlowNodeData } from '@/features/flows/flow-graph';
+import { definitionToGraph, graphToDefinition, validateGraph, type FlowNodeData } from '@/features/flows/flow-graph';
+import { useCreateFlow } from '@/hooks/flows/use-create-flow';
 import { useFlowDetail } from '@/hooks/flows/use-flow-detail';
 import { useSaveFlow } from '@/hooks/flows/use-save-flow';
 import { usePublishFlow } from '@/hooks/flows/use-publish-flow';
-import { useSimulateFlow } from '@/hooks/flows/use-simulate-flow';
+import { useSimulateFlow, type SimulationOutput } from '@/hooks/flows/use-simulate-flow';
 import { isApiError } from '@/lib/api/api-error';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { useMe } from '@/hooks/tenant/use-me';
@@ -141,6 +142,7 @@ const prototypeNodes: Node<FlowData>[] = [
       kind: 'capture',
       icon: 'capture',
       content: 'Digite uma opção para continuar.',
+      variable: 'cliente.opcao',
     },
   },
   {
@@ -159,8 +161,9 @@ const prototypeNodes: Node<FlowData>[] = [
 ];
 const prototypeEdges: Edge[] = [
   { id: 'e1', source: 'no_1', target: 'no_2', ...edgeDefaults },
-  { id: 'e2', source: 'no_2', target: 'no_3', label: 'Suporte', ...edgeDefaults },
-  { id: 'e3', source: 'no_2', target: 'no_4', label: 'Comprar', ...edgeDefaults },
+  // O motor interpreta a regra; rótulo livre quebra a execução da condição.
+  { id: 'e2', source: 'no_2', target: 'no_3', label: 'cliente.opcao == "1"', ...edgeDefaults },
+  { id: 'e3', source: 'no_2', target: 'no_4', label: 'Padrão', ...edgeDefaults },
 ];
 const visualByType: Record<FlowBlockType, { icon: typeof MessageSquareText; tone: string }> = {
   mensagem: { icon: MessageSquareText, tone: 'message' },
@@ -184,11 +187,14 @@ function catalogItemToTool(item: FlowBlockCatalogItem): Tool {
 function FlowEditorContent({
   flowId,
   flowName,
+  published,
   initialNodes,
   initialEdges,
 }: {
   flowId?: string;
   flowName: string;
+  /** O simulador roda sobre a versão publicada; sem ela o backend responde 404. */
+  published: boolean;
   initialNodes: Node<FlowData>[];
   initialEdges: Edge[];
 }) {
@@ -198,6 +204,7 @@ function FlowEditorContent({
   const [saved, setSaved] = useState(false);
   const nextId = useRef(10);
   const saveFlow = useSaveFlow(flowId);
+  const createFlow = useCreateFlow();
   const publishFlow = usePublishFlow(flowId);
   const simulation = useSimulateFlow(flowId);
   const catalog = useFlowBlockCatalog();
@@ -206,33 +213,46 @@ function FlowEditorContent({
   const canManage = me.data?.papel !== 'ATENDENTE';
   const [simulationOpen, setSimulationOpen] = useState(false);
   const [simulationMessage, setSimulationMessage] = useState('');
+  const [transcript, setTranscript] = useState<SimulationOutput[]>([]);
+  const [simulationState, setSimulationState] = useState<Record<string, unknown>>();
+  const awaitingInput = transcript[transcript.length - 1]?.tipo === 'captura';
+  const simulationFinished = simulationState?.concluido === true;
   const canvasRef = useRef<HTMLElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) ?? null, [nodes, selectedId]);
   const tools = useMemo(() => catalog.data?.blocos.map(catalogItemToTool) ?? [], [catalog.data]);
 
+  /**
+   * Marca os blocos incompletos e devolve se o grafo pode ser enviado. Também
+   * limpa marcações antigas, para o erro não sobreviver à correção.
+   */
+  const markInvalidBlocks = useCallback(() => {
+    const issues = validateGraph(nodes, edges);
+    setNodes((current) =>
+      current.map((node) => ({
+        ...node,
+        data: { ...node.data, validationError: issues.find((issue) => issue.nodeId === node.id)?.message },
+      })),
+    );
+    const first = issues[0];
+    if (first) setSelectedId(first.nodeId);
+    return issues.length === 0;
+  }, [edges, nodes, setNodes]);
+
   const save = useCallback(async () => {
-    if (!canManage) return;
-    const missingSector = nodes.find((node) => node.data.kind === 'team' && !node.data.sectorId);
-    if (missingSector) {
-      setNodes((current) =>
-        current.map((node) =>
-          node.id === missingSector.id
-            ? { ...node, data: { ...node.data, validationError: 'Selecione o setor que receberá a conversa.' } }
-            : node,
-        ),
-      );
-      setSelectedId(missingSector.id);
-      return;
-    }
+    if (!canManage || !markInvalidBlocks()) return;
+    const definition = graphToDefinition(nodes, edges);
     try {
-      if (flowId) await saveFlow.mutateAsync({ name: flowName, definition: graphToDefinition(nodes, edges) });
+      // Sem flowId o fluxo ainda não existe: criar é a única forma de não
+      // descartar o que foi montado em /fluxos/novo.
+      if (flowId) await saveFlow.mutateAsync({ name: flowName, definition });
+      else await createFlow.mutateAsync({ name: flowName, definition });
       setSaved(true);
       window.setTimeout(() => setSaved(false), 1800);
     } catch {
       /* erro exibido no cabeçalho */
     }
-  }, [canManage, edges, flowId, flowName, nodes, saveFlow, setNodes]);
+  }, [canManage, createFlow, edges, flowId, flowName, markInvalidBlocks, nodes, saveFlow]);
   const connect = useCallback(
     (connection: Connection) => {
       if (nodes.find((node) => node.id === connection.source)?.data.kind === 'team') return;
@@ -281,7 +301,7 @@ function FlowEditorContent({
     if (tool) createNode(tool, screenToFlowPosition({ x: event.clientX - 112, y: event.clientY - 33 }));
   }
 
-  function updateSelected(field: 'detail' | 'content' | 'sectorId', value: string) {
+  function updateSelected(field: 'detail' | 'content' | 'sectorId' | 'variable', value: string) {
     if (!selectedId) return;
     setNodes((current) =>
       current.map((node) => (node.id === selectedId ? { ...node, data: { ...node.data, [field]: value } } : node)),
@@ -296,20 +316,7 @@ function FlowEditorContent({
   }
 
   async function publish() {
-    if (!canManage) return;
-    const missingSector = nodes.find((node) => node.data.kind === 'team' && !node.data.sectorId);
-    if (missingSector) {
-      setNodes((current) =>
-        current.map((node) =>
-          node.id === missingSector.id
-            ? { ...node, data: { ...node.data, validationError: 'Selecione o setor que receberá a conversa.' } }
-            : node,
-        ),
-      );
-      setSelectedId(missingSector.id);
-      return;
-    }
-    setNodes((current) => current.map((node) => ({ ...node, data: { ...node.data, validationError: undefined } })));
+    if (!canManage || !markInvalidBlocks()) return;
     try {
       await publishFlow.mutateAsync();
     } catch (error) {
@@ -326,13 +333,20 @@ function FlowEditorContent({
     }
   }
 
-  async function simulate(message?: string) {
+  /**
+   * `restart` descarta o estado anterior e recomeça do nó inicial. Sem isso,
+   * clicar em "Testar" retomava a execução antiga em vez de iniciar outra.
+   * As saídas são acumuladas para que a conversa de teste tenha histórico.
+   */
+  async function simulate(message?: string, restart = false) {
+    setSimulationOpen(true);
     try {
-      await simulation.mutateAsync({ message, state: simulation.data?.estado });
+      const response = await simulation.mutateAsync({ message, state: restart ? undefined : simulationState });
+      setTranscript((current) => (restart ? response.saidas : [...current, ...response.saidas]));
+      setSimulationState(response.estado);
       setSimulationMessage('');
-      setSimulationOpen(true);
     } catch {
-      setSimulationOpen(true);
+      /* erro exibido no painel */
     }
   }
 
@@ -364,8 +378,9 @@ function FlowEditorContent({
           <Button variant="ghost" size="icon" disabled aria-label="Refazer (em breve)" icon={<Redo2 size={17} />} />
           <Button
             variant="secondary"
-            onClick={() => void simulate()}
-            disabled={!flowId || simulation.isPending}
+            onClick={() => void simulate(undefined, true)}
+            disabled={!flowId || !published || simulation.isPending}
+            title={published ? 'Simular a última versão publicada' : 'Publique o fluxo para poder simular'}
             icon={<Play size={16} />}
           >
             {simulation.isPending ? 'Simulando...' : 'Testar'}
@@ -513,6 +528,17 @@ function FlowEditorContent({
               </>
             ) : (
               <>
+                {selected.data.kind === 'capture' && (
+                  <label>
+                    <span>Variável que guardará a resposta</span>
+                    <input
+                      value={selected.data.variable ?? ''}
+                      onChange={(event) => updateSelected('variable', event.target.value)}
+                      placeholder="Ex.: cliente.opcao"
+                    />
+                    <small>Letras, números, ponto e sublinhado; comece com letra ou sublinhado.</small>
+                  </label>
+                )}
                 <label>
                   <span>Conteúdo / instrução</span>
                   <textarea
@@ -569,11 +595,15 @@ function FlowEditorContent({
           </header>
           <div className={styles.simulationMessages}>
             {simulation.error && (
-              <p className={styles.simulationError}>
-                {isApiError(simulation.error) ? simulation.error.message : 'Não foi possível simular o fluxo.'}
+              <p className={styles.simulationError} role="alert">
+                {isApiError(simulation.error) && simulation.error.status === 404
+                  ? 'A simulação roda sobre a última versão publicada. Publique o fluxo e teste novamente.'
+                  : isApiError(simulation.error)
+                    ? simulation.error.message
+                    : 'Não foi possível simular o fluxo.'}
               </p>
             )}
-            {simulation.data?.saidas.map((output, index) => (
+            {transcript.map((output, index) => (
               <p key={index}>
                 <small>{output.tipo}</small>
                 {output.texto ??
@@ -581,6 +611,7 @@ function FlowEditorContent({
                   (output.setorId ? `Direcionado para ${output.setorId}` : 'Etapa processada')}
               </p>
             ))}
+            {simulationFinished && <p className={styles.simulationEnd}>Fluxo concluído.</p>}
           </div>
           <form
             onSubmit={(event) => {
@@ -591,12 +622,15 @@ function FlowEditorContent({
             <input
               value={simulationMessage}
               onChange={(event) => setSimulationMessage(event.target.value)}
-              placeholder="Digite uma resposta..."
+              placeholder={awaitingInput ? 'Digite uma resposta...' : 'O fluxo não está aguardando resposta'}
+              disabled={!awaitingInput || simulationFinished}
+              aria-label="Resposta para a simulação"
             />
             <Button
               type="submit"
               size="icon"
-              disabled={!simulationMessage || simulation.isPending}
+              aria-label="Enviar resposta para a simulação"
+              disabled={!simulationMessage || simulation.isPending || !awaitingInput || simulationFinished}
               icon={<Send size={15} />}
             />
           </form>
@@ -626,6 +660,7 @@ function AuthenticatedFlowEditor({ flowId }: { flowId?: string }) {
         key={detail.data?.updated_at ?? 'prototype'}
         flowId={flowId}
         flowName={detail.data?.nome ?? 'Atendimento principal'}
+        published={Boolean(detail.data?.publicado_at)}
         initialNodes={graph.nodes}
         initialEdges={graph.edges}
       />

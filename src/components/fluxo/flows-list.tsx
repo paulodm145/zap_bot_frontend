@@ -97,7 +97,7 @@ export function FlowsList() {
       actions={
         canManage ? (
           <Button
-            onClick={() => createFlow.mutate('Novo fluxo')}
+            onClick={() => createFlow.mutate({ name: 'Novo fluxo' })}
             disabled={createFlow.isPending}
             icon={<Plus size={17} />}
           >
