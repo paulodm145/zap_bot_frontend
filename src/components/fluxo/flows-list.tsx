@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { MoreHorizontal, Plus, Search, Workflow } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import type { FlowStatusFilter, FlowSummary } from '@/features/flows/types';
 import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
 import { useCreateFlow } from '@/hooks/flows/use-create-flow';
 import { useFlows } from '@/hooks/flows/use-flows';
+import { useMe } from '@/hooks/tenant/use-me';
 import { isApiError } from '@/lib/api/api-error';
 import styles from './flows-list.module.css';
 
@@ -18,6 +20,7 @@ function formatDate(value: string) {
 }
 
 export function FlowsList() {
+  const router = useRouter();
   const [skip, setSkip] = useState(0);
   const [take, setTake] = useState(20);
   const [search, setSearch] = useState('');
@@ -25,6 +28,8 @@ export function FlowsList() {
   const debouncedSearch = useDebouncedValue(search);
   const flows = useFlows({ skip, take, search: debouncedSearch, status: status || undefined });
   const createFlow = useCreateFlow();
+  const me = useMe();
+  const canManage = me.data?.papel !== 'ATENDENTE';
   const columns = useMemo<DataTableColumn<FlowSummary>[]>(() => [
     { id: 'name', header: 'Fluxo', accessor: 'nome', sortable: false, width: '31%', render: (flow) => <div className={styles.flowName}><span><Workflow size={16} /></span><div><strong>{flow.nome}</strong><small>{flow.public_id}</small></div></div> },
     { id: 'status', header: 'Estado', width: '18%', render: (flow) => <Badge tone={flow.ativo && !flow.possui_alteracoes_nao_publicadas ? 'success' : flow.ativo ? 'warning' : 'neutral'}>{flow.ativo && !flow.possui_alteracoes_nao_publicadas ? 'Publicado' : flow.ativo ? 'Alterações pendentes' : 'Rascunho'}</Badge> },
@@ -34,8 +39,8 @@ export function FlowsList() {
   ], []);
   const errorMessage = flows.error ? (isApiError(flows.error) ? flows.error.message : 'Não foi possível carregar os fluxos.') : null;
 
-  return <AppShell title="Meus fluxos" subtitle="Crie e organize suas automações." actions={<Button onClick={() => createFlow.mutate('Novo fluxo')} disabled={createFlow.isPending} icon={<Plus size={17} />}>{createFlow.isPending ? 'Criando...' : 'Novo fluxo'}</Button>}>
+  return <AppShell title="Meus fluxos" subtitle="Crie e organize suas automações." actions={canManage ? <Button onClick={() => createFlow.mutate('Novo fluxo')} disabled={createFlow.isPending} icon={<Plus size={17} />}>{createFlow.isPending ? 'Criando...' : 'Novo fluxo'}</Button> : undefined}>
     {(errorMessage || createFlow.error) && <div className={styles.error} role="alert">{errorMessage ?? (isApiError(createFlow.error) ? createFlow.error.message : 'Não foi possível criar o fluxo.')}</div>}
-    <DataTable columns={columns} data={flows.data?.dados ?? []} getRowId={(flow) => flow.public_id} pagination={{ skip: flows.data?.skip ?? skip, take: flows.data?.take ?? take, total: flows.data?.total ?? 0 }} onPaginationChange={(pagination) => { setSkip(pagination.skip); setTake(pagination.take); }} loading={flows.isLoading || flows.isFetching} emptyTitle="Nenhum fluxo encontrado" emptyDescription="Crie seu primeiro fluxo ou altere os filtros da busca." toolbar={<><label className={styles.search}><Search size={15} /><span className="sr-only">Buscar fluxo</span><input value={search} onChange={(event) => { setSearch(event.target.value); setSkip(0); }} placeholder="Buscar fluxo..." /></label><select className={styles.status} value={status} onChange={(event) => { setStatus(event.target.value as FlowStatusFilter | ''); setSkip(0); }} aria-label="Filtrar por estado"><option value="">Todos os estados</option><option value="RASCUNHO">Rascunhos</option><option value="PUBLICADO">Publicados</option></select></>} rowActions={(flow) => <a href={`/fluxos/${flow.public_id}`} aria-label={`Abrir ${flow.nome}`}><Button variant="ghost" size="icon" icon={<MoreHorizontal size={17} />} /></a>} />
+    <DataTable columns={columns} data={flows.data?.dados ?? []} getRowId={(flow) => flow.public_id} pagination={{ skip: flows.data?.skip ?? skip, take: flows.data?.take ?? take, total: flows.data?.total ?? 0 }} onPaginationChange={(pagination) => { setSkip(pagination.skip); setTake(pagination.take); }} loading={flows.isLoading || flows.isFetching} emptyTitle="Nenhum fluxo encontrado" emptyDescription="Crie seu primeiro fluxo ou altere os filtros da busca." toolbar={<><label className={styles.search}><Search size={15} /><span className="sr-only">Buscar fluxo</span><input value={search} onChange={(event) => { setSearch(event.target.value); setSkip(0); }} placeholder="Buscar fluxo..." /></label><select className={styles.status} value={status} onChange={(event) => { setStatus(event.target.value as FlowStatusFilter | ''); setSkip(0); }} aria-label="Filtrar por estado"><option value="">Todos os estados</option><option value="RASCUNHO">Rascunhos</option><option value="PUBLICADO">Publicados</option></select></>} rowActions={(flow) => <Button variant="ghost" size="icon" icon={<MoreHorizontal size={17} />} aria-label={`Abrir ${flow.nome}`} onClick={() => router.push(`/fluxos/${flow.public_id}`)} />} />
   </AppShell>;
 }
