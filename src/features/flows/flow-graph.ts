@@ -77,6 +77,18 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
   return { nodes, edges };
 }
 
+/**
+ * Deriva o próximo id do maior já presente no grafo. Um contador fixo colidia
+ * com os ids de um fluxo salvo e reaberto, gerando blocos duplicados.
+ */
+export function nextNodeId(nodes: Node<FlowNodeData>[]): string {
+  const highest = nodes.reduce((max, node) => {
+    const match = /^no_(\d+)$/.exec(node.id);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `no_${highest + 1}`;
+}
+
 export type GraphValidationIssue = { nodeId: string; message: string };
 
 /** Espelha `variavelFluxoSchema` do backend. */

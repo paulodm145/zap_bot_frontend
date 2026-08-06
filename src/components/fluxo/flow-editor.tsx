@@ -41,7 +41,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import styles from './flow-editor.module.css';
-import { definitionToGraph, graphToDefinition, validateGraph, type FlowNodeData } from '@/features/flows/flow-graph';
+import {
+  definitionToGraph,
+  graphToDefinition,
+  nextNodeId,
+  validateGraph,
+  type FlowNodeData,
+} from '@/features/flows/flow-graph';
 import { useCreateFlow } from '@/hooks/flows/use-create-flow';
 import { useFlowDetail } from '@/hooks/flows/use-flow-detail';
 import { useSaveFlow } from '@/hooks/flows/use-save-flow';
@@ -172,8 +178,14 @@ const visualByType: Record<FlowBlockType, { icon: typeof MessageSquareText; tone
   direcionar_setor: { icon: Users, tone: 'team' },
 };
 
-function catalogItemToTool(item: FlowBlockCatalogItem): Tool {
+/**
+ * O catálogo é servido pelo backend e pode trazer um tipo que esta versão do
+ * editor ainda não conhece. Sem o visual correspondente o bloco é ignorado, em
+ * vez de quebrar a renderização da biblioteca inteira.
+ */
+function catalogItemToTool(item: FlowBlockCatalogItem): Tool | null {
   const visual = visualByType[item.tipo];
+  if (!visual) return null;
   const data = (item.configuracaoInicial.dados ?? {}) as Record<string, unknown>;
   return {
     type: item.tipo,
@@ -202,7 +214,6 @@ function FlowEditorContent({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [selectedId, setSelectedId] = useState<string | null>(initialNodes[0]?.id ?? null);
   const [saved, setSaved] = useState(false);
-  const nextId = useRef(10);
   const saveFlow = useSaveFlow(flowId);
   const createFlow = useCreateFlow();
   const publishFlow = usePublishFlow(flowId);
@@ -220,7 +231,10 @@ function FlowEditorContent({
   const canvasRef = useRef<HTMLElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) ?? null, [nodes, selectedId]);
-  const tools = useMemo(() => catalog.data?.blocos.map(catalogItemToTool) ?? [], [catalog.data]);
+  const tools = useMemo(
+    () => (catalog.data?.blocos ?? []).map(catalogItemToTool).filter((tool): tool is Tool => tool !== null),
+    [catalog.data],
+  );
 
   /**
    * Marca os blocos incompletos e devolve se o grafo pode ser enviado. Também
@@ -262,7 +276,8 @@ function FlowEditorContent({
   );
 
   function createNode(tool: Tool, position: { x: number; y: number }) {
-    const id = `no_${nextId.current++}`;
+    if (!canManage) return;
+    const id = nextNodeId(nodes);
     const node: Node<FlowData> = {
       id,
       type: 'flowNode',
@@ -385,20 +400,27 @@ function FlowEditorContent({
           >
             {simulation.isPending ? 'Simulando...' : 'Testar'}
           </Button>
-          <Button variant="secondary" onClick={() => void publish()} disabled={!flowId || publishFlow.isPending}>
+          <Button
+            variant="secondary"
+            onClick={() => void publish()}
+            disabled={!flowId || !canManage || publishFlow.isPending}
+            title={canManage ? undefined : 'Seu perfil não pode publicar fluxos'}
+          >
             Publicar
           </Button>
-          <Button onClick={() => void save()} disabled={saveFlow.isPending} icon={<Save size={16} />}>
-            {saveFlow.isPending ? 'Salvando...' : 'Salvar'}
+          <Button
+            onClick={() => void save()}
+            disabled={!canManage || saveFlow.isPending || createFlow.isPending}
+            title={canManage ? undefined : 'Seu perfil não pode editar fluxos'}
+            icon={<Save size={16} />}
+          >
+            {saveFlow.isPending || createFlow.isPending ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </header>
       <aside className={styles.library}>
         <div className={styles.libraryTitle}>
           <h2>Blocos</h2>
-          <button aria-label="Recolher biblioteca">
-            <ChevronLeft size={17} />
-          </button>
         </div>
         <p>Arraste para o canvas ou clique para adicionar</p>
         {catalog.isLoading && <p>Carregando catálogo...</p>}

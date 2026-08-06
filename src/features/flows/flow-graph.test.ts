@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   definitionToGraph,
   graphToDefinition,
+  nextNodeId,
   validateGraph,
   type FlowGraph,
   type FlowNodeData,
@@ -222,5 +223,22 @@ describe('condition rule expressions', () => {
       { id: 'e3', source: 'decidir', target: 'c', label: 'Padrão' },
     ]);
     expect(issues).toEqual([]);
+  });
+});
+
+// O editor gerava ids a partir de um contador fixo em 10. Um fluxo salvo com
+// no_10..no_12 e reaberto passava a criar blocos com id duplicado, o que
+// corrompe a definição enviada ao backend.
+describe('node id generation', () => {
+  it('starts after the highest generated id already in the graph', () => {
+    expect(nextNodeId([node('no_3', {}), node('no_12', {}), node('no_7', {})])).toBe('no_13');
+  });
+
+  it('ignores ids that do not follow the generated pattern', () => {
+    expect(nextNodeId([node('atendimento', {}), node('no_2', {})])).toBe('no_3');
+  });
+
+  it('starts at one for an empty graph', () => {
+    expect(nextNodeId([])).toBe('no_1');
   });
 });
