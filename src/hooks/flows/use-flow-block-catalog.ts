@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api/api-client';
+import { limiteDeRegras } from '@/features/flows/flow-catalog';
 import type {
   FlowBlockCatalog,
   FlowBlockCatalogItem,
@@ -11,7 +12,6 @@ import type {
   FlowBlockType,
   FlowConditionLanguage,
   FlowGraphLimits,
-  limiteDeRegras,
 } from '@/features/flows/flow-catalog';
 
 // Reexport for backward compatibility

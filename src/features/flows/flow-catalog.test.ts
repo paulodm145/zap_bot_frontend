@@ -132,3 +132,16 @@ describe('limiteDeRegras', () => {
     ).toBe(50);
   });
 });
+
+describe('limiteDeRegras reexport via hook', () => {
+  it('is available and callable when imported through the hook reexport path', async () => {
+    // Dynamic import to test the actual reexport, not just type-checking
+    const hookModule = await import('@/hooks/flows/use-flow-block-catalog');
+    expect(typeof hookModule.limiteDeRegras).toBe('function');
+  });
+
+  it('returns the correct value when called through the hook reexport path', async () => {
+    const hookModule = await import('@/hooks/flows/use-flow-block-catalog');
+    expect(hookModule.limiteDeRegras()).toBe(20);
+  });
+});
