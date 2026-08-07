@@ -2,14 +2,9 @@
 
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { nextRuleId, ordinal } from '@/features/flows/flow-rules';
+import { nextRuleId, ordinal, ROTULO_OPERADOR } from '@/features/flows/flow-rules';
 import type { FlowRule, FlowRuleOperator } from '@/features/flows/types';
 import styles from './condition-rules-editor.module.css';
-
-const ROTULO_OPERADOR: Record<FlowRuleOperator, string> = {
-  '==': 'é igual a',
-  '!=': 'é diferente de',
-};
 
 export type ConditionRulesEditorProps = {
   regras: FlowRule[];

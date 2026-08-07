@@ -111,22 +111,30 @@
   cursor: not-allowed;
 }
 
-.rule label,
-.fallback {
+/*
+ * Qualificados por `.builder` (não só `.rule`/`.fallback`) para vencer, em
+ * especificidade, os seletores descendentes `.properties label`,
+ * `.properties label > span` e `.properties input` de `flow-editor.module.css`
+ * — CSS Modules escopa nomes de classe, não o alcance do seletor, então esses
+ * dois arquivos podem colidir quando este componente for aninhado dentro do
+ * elemento com a classe `.properties` (Task 6).
+ */
+.builder .rule label,
+.builder .fallback {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.rule label > span,
-.fallback > span {
+.builder .rule label > span,
+.builder .fallback > span {
   font-size: 12px;
   color: var(--muted);
 }
 
-.rule select,
-.rule input,
-.fallback select {
+.builder .rule select,
+.builder .rule input,
+.builder .fallback select {
   width: 100%;
   min-height: 40px;
   padding: 0 10px;
@@ -138,16 +146,17 @@
   font-size: 13px;
 }
 
-.rule select:focus,
-.rule input:focus,
-.fallback select:focus {
-  outline: none;
+.builder .rule select:focus,
+.builder .rule input:focus,
+.builder .fallback select:focus {
+  /* Sem `outline: none`: o foco nativo do navegador continua visível como
+     pista independente de cor, e a borda verde reforça o estado. */
   border-color: var(--green-600);
 }
 
-.rule select:disabled,
-.rule input:disabled,
-.fallback select:disabled {
+.builder .rule select:disabled,
+.builder .rule input:disabled,
+.builder .fallback select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

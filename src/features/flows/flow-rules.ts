@@ -4,7 +4,7 @@ import type { FlowNodeData, FlowRule, FlowRuleOperator } from './types';
 /** Espelha `EXPRESSAO_COMPARACAO` de `condicao-fluxo.helper.ts` no backend. */
 const EXPRESSAO = /^\s*([A-Za-z_][A-Za-z0-9_.]{0,79})\s*(==|!=)\s*(['"])([^'"]*)\3\s*$/;
 
-const ROTULO_OPERADOR: Record<FlowRuleOperator, string> = {
+export const ROTULO_OPERADOR: Record<FlowRuleOperator, string> = {
   '==': 'é igual a',
   '!=': 'é diferente de',
 };
