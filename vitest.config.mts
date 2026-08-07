@@ -9,6 +9,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       include: [
+        'src/features/flows/flow-catalog.ts',
         'src/features/flows/flow-graph.ts',
         'src/features/flows/flow-rules.ts',
         'src/lib/api/api-error.ts',
