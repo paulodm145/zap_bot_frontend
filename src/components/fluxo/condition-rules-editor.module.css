@@ -85,15 +85,15 @@
 
 .ruleActions {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 
 .ruleActions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -122,6 +122,34 @@
 .fallback > span {
   font-size: 12px;
   color: var(--muted);
+}
+
+.rule select,
+.rule input,
+.fallback select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+}
+
+.rule select:focus,
+.rule input:focus,
+.fallback select:focus {
+  outline: none;
+  border-color: var(--green-600);
+}
+
+.rule select:disabled,
+.rule input:disabled,
+.fallback select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .fallback {
