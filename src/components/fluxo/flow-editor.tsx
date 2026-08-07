@@ -133,34 +133,34 @@ const prototypeNodes: Node<FlowData>[] = [
   {
     id: 'no_3',
     type: 'flowNode',
-    position: { x: 90, y: 345 },
+    position: { x: 310, y: 180 },
     data: {
       label: 'Capturar resposta',
       detail: 'Identificar solicitação',
       kind: 'capture',
       icon: 'capture',
-      content: 'Digite uma opção para continuar.',
+      content: 'Digite 1 para falar com um atendente.',
       variable: 'cliente.opcao',
     },
   },
   {
     id: 'no_2',
     type: 'flowNode',
-    position: { x: 310, y: 180 },
+    position: { x: 310, y: 320 },
     data: {
       label: 'Condição',
       detail: 'Identificar intenção',
       kind: 'condition',
       icon: 'condition',
       content: '',
-      regras: [{ id: 'regra_1', variavel: 'cliente.opcao', operador: '==' as const, valor: '1', destinoId: 'no_3' }],
-      padraoId: 'no_4',
+      regras: [{ id: 'regra_1', variavel: 'cliente.opcao', operador: '==' as const, valor: '1', destinoId: 'no_4' }],
+      padraoId: 'no_5',
     },
   },
   {
     id: 'no_4',
     type: 'flowNode',
-    position: { x: 530, y: 345 },
+    position: { x: 530, y: 470 },
     data: {
       label: 'Direcionar setor',
       detail: 'Escolha um setor',
@@ -170,10 +170,26 @@ const prototypeNodes: Node<FlowData>[] = [
       sectorId: '',
     },
   },
+  {
+    id: 'no_5',
+    type: 'flowNode',
+    position: { x: 90, y: 470 },
+    data: {
+      label: 'Mensagem',
+      detail: 'Não entendi',
+      kind: 'message',
+      icon: 'message',
+      content: 'Não entendi sua resposta. Vou te encaminhar para um atendente.',
+    },
+  },
 ];
-// As arestas da condição saem das regras do próprio bloco; aqui fica apenas a
-// ligação simples entre os demais blocos.
-const prototypeEdges: Edge[] = [{ id: 'e1', source: 'no_1', target: 'no_2', ...edgeDefaults }];
+// As arestas da condição saem das regras do próprio bloco; aqui ficam apenas as
+// ligações simples entre os demais blocos. `no_1` é o primeiro do array porque
+// `graphToDefinition` deriva `noInicial` dessa posição.
+const prototypeEdges: Edge[] = [
+  { id: 'e1', source: 'no_1', target: 'no_3', ...edgeDefaults },
+  { id: 'e2', source: 'no_3', target: 'no_2', ...edgeDefaults },
+];
 const visualByType: Record<FlowBlockType, { icon: typeof MessageSquareText; tone: string }> = {
   mensagem: { icon: MessageSquareText, tone: 'message' },
   captura_resposta: { icon: TextCursorInput, tone: 'capture' },
