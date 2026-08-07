@@ -2,6 +2,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* Mesmo respiro dos demais campos do painel de propriedades, que separam-se
+     por `margin-top: 16px`; sem ele o construtor encosta no campo anterior. */
+  margin-top: 16px;
 }
 
 .header {
@@ -124,6 +127,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* `.properties label` declara `margin-top: 16px`, que dobraria o espaçamento
+     interno dos cartões de regra. */
+  margin: 0;
 }
 
 .builder .rule label > span,
@@ -149,9 +155,19 @@
 .builder .rule select:focus,
 .builder .rule input:focus,
 .builder .fallback select:focus {
-  /* Sem `outline: none`: o foco nativo do navegador continua visível como
-     pista independente de cor, e a borda verde reforça o estado. */
   border-color: var(--green-600);
+}
+
+/*
+ * `.properties input` de `flow-editor.module.css` declara `outline: none` e
+ * alcança os campos deste componente quando ele é montado no painel (Task 6).
+ * O anel próprio garante que o foco não fique indicado só pela cor da borda.
+ */
+.builder .rule select:focus-visible,
+.builder .rule input:focus-visible,
+.builder .fallback select:focus-visible {
+  outline: 2px solid var(--green-600);
+  outline-offset: 2px;
 }
 
 .builder .rule select:disabled,
