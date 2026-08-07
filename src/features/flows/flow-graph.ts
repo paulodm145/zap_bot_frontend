@@ -1,5 +1,6 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import type { FlowDefinition, FlowNodeData } from './types';
+import { ordinal, parseRule, serializeRule, variaveisDisponiveis } from './flow-rules';
 
 export type { FlowNodeData } from './types';
 export type FlowGraph = { nodes: Node<FlowNodeData>[]; edges: Edge[] };
@@ -40,6 +41,28 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
         content,
         ...(kind === 'team' && typeof data.setorId === 'string' ? { sectorId: data.setorId } : {}),
         ...(kind === 'capture' && typeof data.variavel === 'string' ? { variable: data.variavel } : {}),
+        ...(kind === 'condition'
+          ? {
+              regras: (Array.isArray(data.regras) ? data.regras : []).map((raw, ruleIndex) => {
+                const item = raw as Record<string, unknown>;
+                const se = String(item.se ?? '');
+                const entao = String(item.entao ?? '');
+                const ruleId = `${id}-regra-${ruleIndex + 1}`;
+                // Expressão fora do formato não é descartada: vira regra
+                // incompleta com o texto original no campo de valor.
+                return (
+                  parseRule(se, entao, ruleId) ?? {
+                    id: ruleId,
+                    variavel: '',
+                    operador: '==' as const,
+                    valor: se,
+                    destinoId: entao,
+                  }
+                );
+              }),
+              padraoId: typeof data.padrao === 'string' ? data.padrao : '',
+            }
+          : {}),
       },
     } satisfies Node<FlowNodeData>;
   });
@@ -48,21 +71,6 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
     const source = String(raw.id);
     if (typeof raw.proximo === 'string')
       edges.push({ id: `${source}-${raw.proximo}`, source, target: raw.proximo, ...edgeStyle });
-    const data = (raw.dados ?? {}) as Record<string, unknown>;
-    if (Array.isArray(data.regras))
-      data.regras.forEach((rule, index) => {
-        const item = rule as Record<string, unknown>;
-        if (typeof item.entao === 'string')
-          edges.push({
-            id: `${source}-regra-${index}`,
-            source,
-            target: item.entao,
-            label: String(item.se ?? ''),
-            ...edgeStyle,
-          });
-      });
-    if (typeof data.padrao === 'string')
-      edges.push({ id: `${source}-padrao`, source, target: data.padrao, label: 'Padrão', ...edgeStyle });
   });
   return { nodes, edges };
 }
@@ -84,8 +92,26 @@ export type GraphValidationIssue = { nodeId: string; message: string };
 /** Espelha `variavelFluxoSchema` do backend. */
 const variablePattern = /^[A-Za-z_][A-Za-z0-9_.]{0,79}$/;
 
-/** Espelha `EXPRESSAO_COMPARACAO` de `condicao-fluxo.helper.ts` no backend. */
-const conditionPattern = /^\s*[A-Za-z_][A-Za-z0-9_.]{0,79}\s*(==|!=)\s*(['"])[^'"]*\2\s*$/;
+/** Espelha `maximoCaracteres` do campo `dados.regras` no catálogo do backend. */
+const MAXIMO_CARACTERES_REGRA = 300;
+
+function validateCondition(node: Node<FlowNodeData>, nodes: Node<FlowNodeData>[], edges: Edge[]): string | undefined {
+  const regras = node.data.regras ?? [];
+  if (regras.length === 0) return 'Adicione ao menos uma regra.';
+  const disponiveis = variaveisDisponiveis(nodes, edges, node.id);
+  for (const [index, rule] of regras.entries()) {
+    if (!rule.variavel) return `Complete a ${ordinal(index)} regra: falta escolher a variável.`;
+    if (!rule.valor) return `Complete a ${ordinal(index)} regra: falta informar o valor.`;
+    if (!rule.destinoId) return `Complete a ${ordinal(index)} regra: falta escolher o destino.`;
+    if (/["']/.test(rule.valor)) return `O valor da ${ordinal(index)} regra não pode conter aspas.`;
+    if (serializeRule(rule).length > MAXIMO_CARACTERES_REGRA)
+      return `A ${ordinal(index)} regra é longa demais; reduza o valor.`;
+    if (!disponiveis.includes(rule.variavel))
+      return `A variável ${rule.variavel} não é capturada antes desta condição.`;
+  }
+  if (!node.data.padraoId) return 'Escolha para onde ir quando nenhuma regra for verdadeira.';
+  return undefined;
+}
 
 /**
  * Aponta o bloco incompleto antes do envio. O backend valida a definição
@@ -95,19 +121,13 @@ const conditionPattern = /^\s*[A-Za-z_][A-Za-z0-9_.]{0,79}\s*(==|!=)\s*(['"])[^'
 export function validateGraph(nodes: Node<FlowNodeData>[], edges: Edge[]): GraphValidationIssue[] {
   const issues: GraphValidationIssue[] = [];
   for (const node of nodes) {
-    const outgoing = edges.filter((edge) => edge.source === node.id);
     if (node.data.kind === 'team' && !node.data.sectorId) {
       issues.push({ nodeId: node.id, message: 'Selecione o setor que receberá a conversa.' });
     } else if (node.data.kind === 'capture' && !variablePattern.test(node.data.variable ?? '')) {
       issues.push({ nodeId: node.id, message: 'Informe a variável que guardará a resposta.' });
-    } else if (node.data.kind === 'condition' && outgoing.length < 2) {
-      issues.push({ nodeId: node.id, message: 'Conecte ao menos duas saídas: uma regra e o caminho padrão.' });
-    } else if (
-      node.data.kind === 'condition' &&
-      // A saída padrão não é uma comparação; as demais são interpretadas pelo motor.
-      outgoing.some((edge) => edge.label !== 'Padrão' && edge.label && !conditionPattern.test(String(edge.label)))
-    ) {
-      issues.push({ nodeId: node.id, message: 'Use o formato variavel == "valor" nas saídas da condição.' });
+    } else if (node.data.kind === 'condition') {
+      const message = validateCondition(node, nodes, edges);
+      if (message) issues.push({ nodeId: node.id, message });
     } else if (node.data.kind === 'message' && !node.data.content.trim()) {
       issues.push({ nodeId: node.id, message: 'Escreva o texto que o bot vai enviar.' });
     }
@@ -123,18 +143,13 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
     nos: nodes.map((node) => {
       const outgoing = edges.filter((edge) => edge.source === node.id);
       if (node.data.kind === 'condition') {
-        // `padrao` é obrigatório no backend. Uma aresta rotulada "Padrão" tem
-        // precedência; sem ela, a última saída vira o caminho de fallback.
-        const marked = outgoing.find((edge) => edge.label === 'Padrão');
-        const fallback = marked ?? outgoing[outgoing.length - 1];
+        const regras = (node.data.regras ?? []).filter((rule) => rule.variavel !== '' && rule.destinoId !== '');
         return {
           id: node.id,
           tipo: 'condicao',
           dados: {
-            regras: outgoing
-              .filter((edge) => edge !== fallback)
-              .map((edge, index) => ({ se: String(edge.label ?? `opcao == "${index + 1}"`), entao: edge.target })),
-            padrao: fallback?.target ?? '',
+            regras: regras.map((rule) => ({ se: serializeRule(rule), entao: rule.destinoId })),
+            padrao: node.data.padraoId ?? '',
           },
         };
       }
