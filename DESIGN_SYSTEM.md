@@ -50,6 +50,26 @@ Não use `confirm()` nativo: ele ignora os tokens, não exibe o erro da requisi�
 />
 ```
 
+### Construtor de regras (bloco de condição)
+
+`ConditionRulesEditor` monta a configuração do bloco de condição como uma lista de cartões numerados por precedência (`1ª`, `2ª`, …), avaliados de cima para baixo — a primeira regra verdadeira decide o caminho. Cada cartão organiza quatro campos em coluna, sempre com label visível: variável, comparação, valor e o bloco de destino (“Se a variável / Comparação / Valor / Então vá para”). Um rodapé separado por linha (`border-top`) fixa a saída padrão, usada quando nenhuma regra é verdadeira.
+
+Reordenar e remover são botões de 32 px com ícone apenas — cada um leva `aria-label` descritivo (“Mover a 2ª regra para cima”, “Remover a 1ª regra”), nunca dependem só do ícone para se explicar. Quando não há variável capturada por um bloco anterior no fluxo, o construtor mostra um estado vazio (`--line` tracejado, fundo `--canvas`) explicando que é preciso adicionar um bloco “Capturar resposta” antes da condição, e desabilita “Adicionar regra”. Atingir `maximoRegras` também desabilita a ação, com aviso em `--warning`.
+
+```tsx
+<ConditionRulesEditor
+  regras={regras}
+  padraoId={padraoId}
+  variaveis={variaveisDisponiveis}
+  blocos={blocos}
+  operadores={['==', '!=']}
+  maximoRegras={10}
+  disabled={salvando}
+  onRulesChange={setRegras}
+  onPadraoChange={setPadraoId}
+/>
+```
+
 ## Padrões de interface
 
 - Use uma ação primária por contexto e verbos objetivos: “Salvar”, “Enviar instruções”.
