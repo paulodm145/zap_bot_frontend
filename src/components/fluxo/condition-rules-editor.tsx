@@ -1,5 +1,6 @@
 'use client';
 
+import { useId, useState } from 'react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nextRuleId, ordinal, ROTULO_OPERADOR } from '@/features/flows/flow-rules';
@@ -31,6 +32,10 @@ export function ConditionRulesEditor({
 }: ConditionRulesEditorProps) {
   const semVariaveis = variaveis.length === 0;
   const noLimite = regras.length >= maximoRegras;
+  const aspasMessageBaseId = useId();
+  // Guarda o id da regra que teve aspa removida do valor, para mostrar a
+  // mensagem inline só naquele campo até o usuário digitar algo sem aspas.
+  const [regrasComAspaRemovida, setRegrasComAspaRemovida] = useState<Set<string>>(new Set());
 
   function adicionar() {
     const rule: FlowRule = {
@@ -49,7 +54,33 @@ export function ConditionRulesEditor({
   }
 
   function remover(index: number) {
+    const removida = regras[index];
     onRulesChange(regras.filter((_, position) => position !== index));
+    setRegrasComAspaRemovida((current) => {
+      if (!current.has(removida.id)) return current;
+      const next = new Set(current);
+      next.delete(removida.id);
+      return next;
+    });
+  }
+
+  /**
+   * O formato do backend é `variavel operador "valor"`: uma aspa dentro do
+   * valor quebraria a expressão. O caractere é removido antes de entrar no
+   * estado, mas a remoção fica sinalizada por texto — nunca só apagada em
+   * silêncio — até o usuário digitar algo sem aspas.
+   */
+  function atualizarValor(index: number, ruleId: string, valorDigitado: string) {
+    const temAspas = /["']/.test(valorDigitado);
+    atualizar(index, { valor: valorDigitado.replace(/["']/g, '') });
+    setRegrasComAspaRemovida((current) => {
+      const jaMarcada = current.has(ruleId);
+      if (temAspas === jaMarcada) return current;
+      const next = new Set(current);
+      if (temAspas) next.add(ruleId);
+      else next.delete(ruleId);
+      return next;
+    });
   }
 
   function mover(index: number, destino: number) {
@@ -147,12 +178,16 @@ export function ConditionRulesEditor({
               <span>Valor</span>
               <input
                 value={rule.valor}
-                // O formato do backend é variavel operador "valor": uma aspa
-                // dentro do valor quebraria a expressão.
-                onChange={(event) => atualizar(index, { valor: event.target.value.replace(/["']/g, '') })}
+                onChange={(event) => atualizarValor(index, rule.id, event.target.value)}
                 disabled={disabled}
                 placeholder="Ex.: 1"
+                aria-describedby={regrasComAspaRemovida.has(rule.id) ? `${aspasMessageBaseId}-${rule.id}` : undefined}
               />
+              {regrasComAspaRemovida.has(rule.id) && (
+                <p id={`${aspasMessageBaseId}-${rule.id}`} className={styles.valueWarning}>
+                  Aspas não são aceitas no valor.
+                </p>
+              )}
             </label>
             <label>
               <span>Então vá para</span>
