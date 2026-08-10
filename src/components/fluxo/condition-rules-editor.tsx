@@ -183,12 +183,12 @@ export function ConditionRulesEditor({
                 placeholder="Ex.: 1"
                 aria-describedby={regrasComAspaRemovida.has(rule.id) ? `${aspasMessageBaseId}-${rule.id}` : undefined}
               />
-              {regrasComAspaRemovida.has(rule.id) && (
-                <p id={`${aspasMessageBaseId}-${rule.id}`} className={styles.valueWarning}>
-                  Aspas não são aceitas no valor.
-                </p>
-              )}
             </label>
+            {regrasComAspaRemovida.has(rule.id) && (
+              <p id={`${aspasMessageBaseId}-${rule.id}`} className={styles.valueWarning}>
+                Aspas não são aceitas no valor.
+              </p>
+            )}
             <label>
               <span>Então vá para</span>
               <select

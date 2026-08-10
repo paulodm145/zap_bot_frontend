@@ -589,6 +589,7 @@ function FlowEditorContent({
             </label>
             {selected.data.kind === 'condition' ? (
               <ConditionRulesEditor
+                key={selected.id}
                 regras={selected.data.regras ?? []}
                 padraoId={selected.data.padraoId ?? ''}
                 variaveis={variaveisDisponiveis(nodes, displayEdges, selected.id)}

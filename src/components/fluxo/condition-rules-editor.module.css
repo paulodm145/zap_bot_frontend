@@ -183,7 +183,10 @@
 }
 
 .valueWarning {
-  margin: 0;
+  /* `.rule` já aplica `gap: 8px` entre seus filhos; a margem negativa
+     aproxima o aviso do campo "Valor" ao qual ele se refere, como antes de
+     `<p>` deixar de ser filho do `<label>`. */
+  margin: -4px 0 0;
   font-size: 12px;
   color: var(--danger);
 }
