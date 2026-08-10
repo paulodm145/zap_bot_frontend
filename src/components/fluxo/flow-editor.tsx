@@ -595,7 +595,7 @@ function FlowEditorContent({
                 blocos={nodes
                   .filter((node) => node.id !== selected.id)
                   .map((node) => ({ id: node.id, rotulo: `${node.data.label}: ${node.data.detail}` }))}
-                operadores={catalog.data?.linguagemCondicao.operadores ?? ['==', '!=']}
+                operadores={catalog.data?.linguagemCondicao?.operadores ?? ['==', '!=']}
                 maximoRegras={limiteDeRegras(catalog.data)}
                 disabled={!canManage}
                 onRulesChange={(regras) =>

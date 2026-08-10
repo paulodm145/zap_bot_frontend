@@ -301,6 +301,22 @@ describe('flow graph validation', () => {
     ]);
   });
 
+  it('rejects a rule whose serialized expression is too long', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'opcao', operador: '==', valor: 'x'.repeat(300), destinoId: 'a' }],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([
+      { nodeId: 'decidir', message: 'A 1ª regra é longa demais; reduza o valor.' },
+    ]);
+  });
+
   it('accepts a complete condition', () => {
     const nodes = [
       node('captura', { kind: 'capture', variable: 'opcao' }),

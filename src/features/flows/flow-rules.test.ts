@@ -66,6 +66,10 @@ describe('flow rule labels', () => {
   it('marks an incomplete rule instead of showing an empty comparison', () => {
     expect(describeRule(rule({ variavel: '' }))).toBe('Regra incompleta');
   });
+
+  it('marks an incomplete rule when the value is still empty', () => {
+    expect(describeRule(rule({ valor: '' }))).toBe('Regra incompleta');
+  });
 });
 
 describe('flow rule ids', () => {

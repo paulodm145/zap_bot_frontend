@@ -31,7 +31,7 @@ export function serializeRule(rule: FlowRule): string {
 }
 
 export function describeRule(rule: FlowRule): string {
-  if (!rule.variavel) return 'Regra incompleta';
+  if (!rule.variavel || !rule.valor) return 'Regra incompleta';
   return `Se ${rule.variavel} ${ROTULO_OPERADOR[rule.operador]} ${rule.valor}`;
 }
 
