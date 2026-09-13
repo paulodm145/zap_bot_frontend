@@ -12,3 +12,11 @@
 - [x] **NE-04 — Validar integrações atualizadas**
   Branch: `test/new-endpoints-integration` · Commit: `test: cover new administrative endpoints`
   Aceite: lint, tipos, testes, cobertura e build aprovados.
+- [ ] **NE-05 — Automação de fluxo de entrada por conta WhatsApp**
+  Descoberto ao migrar Contas WhatsApp para Evolution API
+  (`feat/contas-whatsapp-evolution-api`): o formulário de criação enviava
+  `fluxoEntradaPublicId`, mas `POST /contas-whatsapp` no backend nunca aceitou
+  esse campo (schema estrito) — a seleção de fluxo nunca funcionou de fato,
+  mesmo antes desta migração. Removida do formulário. Bloqueada: exige decisão
+  de produto e um campo novo em `ContaWhatsapp` no backend antes de voltar ao
+  frontend.
