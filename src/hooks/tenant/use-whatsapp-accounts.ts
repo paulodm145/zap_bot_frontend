@@ -1,23 +1,16 @@
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api/api-client';
-import type { Page } from '@/features/tenant/types';
-export type WhatsAppAccount = {
-  public_id: string;
-  nome: string;
-  phone_number_id: string;
-  waba_id: string;
-  numero_exibicao?: string | null;
-  fluxo_entrada?: { public_id: string; nome: string } | null;
-  status: 'PENDENTE' | 'VALIDADA' | 'INVALIDA';
-  ativo: boolean;
-  ultima_validacao_at?: string | null;
-  ultimo_erro_mensagem?: string | null;
-};
-const keys = ['tenant', 'whatsapp'] as const;
+import type { Page, WhatsAppAccount } from '@/features/tenant/types';
+
+export type { WhatsAppAccount } from '@/features/tenant/types';
+export type WhatsAppQrResult = { conta: WhatsAppAccount; qrCodeBase64?: string };
+
+export const whatsappKeys = { all: ['tenant', 'whatsapp'] as const };
+
 export function useWhatsAppAccounts(search = '', skip = 0, take = 20) {
   return useQuery({
-    queryKey: [...keys, search, skip, take],
+    queryKey: [...whatsappKeys.all, search, skip, take],
     queryFn: ({ signal }) =>
       apiRequest<Page<WhatsAppAccount>>(
         `/contas-whatsapp?skip=${skip}&take=${take}&busca=${encodeURIComponent(search)}`,
@@ -25,26 +18,43 @@ export function useWhatsAppAccounts(search = '', skip = 0, take = 20) {
       ),
   });
 }
-function useAccountAction<T>(fn: (input: T) => Promise<unknown>) {
-  const client = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => client.invalidateQueries({ queryKey: keys }) });
+
+/** Consulta o detalhe de uma conta e faz polling enquanto ela aguarda pareamento. */
+export function useWhatsAppAccount(id: string | null) {
+  return useQuery({
+    queryKey: [...whatsappKeys.all, 'detail', id],
+    queryFn: ({ signal }) => apiRequest<WhatsAppAccount>(`/contas-whatsapp/${id}`, { signal }),
+    enabled: id !== null,
+    refetchInterval: (query) => (query.state.data?.status === 'CONECTANDO' ? 3000 : false),
+  });
 }
+
+function useAccountAction<T, R = unknown>(fn: (input: T) => Promise<R>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => client.invalidateQueries({ queryKey: whatsappKeys.all }),
+  });
+}
+
 export function useCreateWhatsApp() {
-  return useAccountAction(
-    (input: {
-      nome: string;
-      phoneNumberId: string;
-      wabaId: string;
-      numeroExibicao: string;
-      versaoGraphApi: string;
-      accessToken: string;
-      fluxoEntradaPublicId?: string;
-    }) => apiRequest('/contas-whatsapp', { method: 'POST', body: JSON.stringify(input) }),
+  return useAccountAction<{ nome: string }, WhatsAppQrResult>((input) =>
+    apiRequest<WhatsAppQrResult>('/contas-whatsapp', { method: 'POST', body: JSON.stringify(input) }),
   );
 }
-export function useTestWhatsApp() {
-  return useAccountAction((id: string) => apiRequest(`/contas-whatsapp/${id}/testar`, { method: 'POST' }));
+
+export function useReconnectWhatsApp() {
+  return useAccountAction<string, WhatsAppQrResult>((id) =>
+    apiRequest<WhatsAppQrResult>(`/contas-whatsapp/${id}/reconectar`, { method: 'POST' }),
+  );
 }
+
+export function useDisconnectWhatsApp() {
+  return useAccountAction<string, WhatsAppAccount>((id) =>
+    apiRequest<WhatsAppAccount>(`/contas-whatsapp/${id}/desconectar`, { method: 'POST' }),
+  );
+}
+
 export function useWhatsAppStatus() {
   return useAccountAction((input: { id: string; ativo: boolean }) =>
     apiRequest(`/contas-whatsapp/${input.id}/status`, {

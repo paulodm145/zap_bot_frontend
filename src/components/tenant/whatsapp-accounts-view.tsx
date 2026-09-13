@@ -5,16 +5,20 @@ import { MessageCircle, Plus, Search } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
-import { useFlows } from '@/hooks/flows/use-flows';
 import {
   useCreateWhatsApp,
-  useTestWhatsApp,
+  useDisconnectWhatsApp,
+  useReconnectWhatsApp,
+  useWhatsAppAccount,
   useWhatsAppAccounts,
   useWhatsAppStatus,
   type WhatsAppAccount,
+  type WhatsAppQrResult,
 } from '@/hooks/tenant/use-whatsapp-accounts';
+import { whatsappStatusLabel, whatsappStatusTone } from '@/features/tenant/whatsapp';
 import { isApiError } from '@/lib/api/api-error';
 import { CrudModal } from './crud-modal';
 import styles from './tenant.module.css';
@@ -23,25 +27,26 @@ export function WhatsAppAccountsView() {
   const [search, setSearch] = useState('');
   const [skip, setSkip] = useState(0);
   const [take, setTake] = useState(20);
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [nome, setNome] = useState('');
-  const [phone, setPhone] = useState('');
-  const [waba, setWaba] = useState('');
-  const [display, setDisplay] = useState('');
-  const [version, setVersion] = useState('v23.0');
-  const [token, setToken] = useState('');
-  const [entryFlow, setEntryFlow] = useState('');
+  const [qrAccount, setQrAccount] = useState<{ id: string; qrCodeBase64?: string } | null>(null);
+  const [disconnecting, setDisconnecting] = useState<WhatsAppAccount | undefined>(undefined);
   const list = useWhatsAppAccounts(useDebouncedValue(search), skip, take);
-  const publishedFlows = useFlows({ skip: 0, take: 100, status: 'PUBLICADO' });
   const create = useCreateWhatsApp();
-  const test = useTestWhatsApp();
+  const reconnect = useReconnectWhatsApp();
+  const disconnect = useDisconnectWhatsApp();
   const status = useWhatsAppStatus();
+
+  function openQrModal(result: WhatsAppQrResult) {
+    setQrAccount({ id: result.conta.public_id, qrCodeBase64: result.qrCodeBase64 });
+  }
+
   const columns = useMemo<DataTableColumn<WhatsAppAccount>[]>(
     () => [
       {
         id: 'name',
         header: 'Conta',
-        width: '29%',
+        width: '30%',
         render: (account) => (
           <div className={styles.entity}>
             <span>
@@ -49,29 +54,23 @@ export function WhatsAppAccountsView() {
             </span>
             <div>
               <strong>{account.nome}</strong>
-              <small>{account.numero_exibicao ?? account.phone_number_id}</small>
+              <small>{account.numero_exibicao ?? 'Ainda não pareado'}</small>
             </div>
           </div>
         ),
       },
-      { id: 'phone', header: 'Phone Number ID', width: '22%', render: (account) => account.phone_number_id },
       {
-        id: 'flow',
-        header: 'Fluxo de entrada',
+        id: 'status',
+        header: 'Conexão',
         width: '20%',
-        render: (account) => account.fluxo_entrada?.nome ?? 'Sem automação',
+        render: (account) => <Badge tone={whatsappStatusTone(account.status)}>{whatsappStatusLabel(account.status)}</Badge>,
       },
       {
-        id: 'validation',
-        header: 'Validação',
-        width: '16%',
-        render: (account) => (
-          <Badge
-            tone={account.status === 'VALIDADA' ? 'success' : account.status === 'INVALIDA' ? 'neutral' : 'warning'}
-          >
-            {account.status}
-          </Badge>
-        ),
+        id: 'sync',
+        header: 'Última sincronização',
+        width: '25%',
+        render: (account) =>
+          account.ultima_sincronizacao_at ? new Date(account.ultima_sincronizacao_at).toLocaleString('pt-BR') : '—',
       },
       {
         id: 'active',
@@ -84,20 +83,19 @@ export function WhatsAppAccountsView() {
     ],
     [],
   );
-  const error = list.error ?? test.error ?? status.error;
+  const error = list.error ?? disconnect.error ?? status.error;
 
-  function closeModal() {
-    setToken('');
-    setEntryFlow('');
-    setOpen(false);
+  function closeCreateModal() {
+    setNome('');
+    setCreateOpen(false);
   }
 
   return (
     <AppShell
       title="Contas WhatsApp"
-      subtitle="Números conectados à Cloud API."
+      subtitle="Números pareados via Evolution API."
       actions={
-        <Button icon={<Plus size={17} />} onClick={() => setOpen(true)}>
+        <Button icon={<Plus size={17} />} onClick={() => setCreateOpen(true)}>
           Conectar número
         </Button>
       }
@@ -114,7 +112,7 @@ export function WhatsAppAccountsView() {
         }}
         loading={list.isLoading || list.isFetching}
         emptyTitle="Nenhuma conta conectada"
-        emptyDescription="Conecte um número da WhatsApp Cloud API para começar."
+        emptyDescription="Conecte um número via QR code para começar."
         toolbar={
           <label className={styles.search}>
             <Search size={15} />
@@ -130,36 +128,40 @@ export function WhatsAppAccountsView() {
         }
         rowActions={(account) => (
           <>
-            <Button variant="ghost" onClick={() => test.mutate(account.public_id)}>
-              Testar
+            <Button
+              variant="ghost"
+              disabled={reconnect.isPending}
+              onClick={() => reconnect.mutate(account.public_id, { onSuccess: openQrModal })}
+            >
+              {account.status === 'CONECTADO' ? 'Novo QR code' : 'Reconectar'}
             </Button>
             <Button variant="ghost" onClick={() => status.mutate({ id: account.public_id, ativo: !account.ativo })}>
               {account.ativo ? 'Desativar' : 'Ativar'}
             </Button>
+            <Button variant="ghost" onClick={() => setDisconnecting(account)}>
+              Desconectar
+            </Button>
           </>
         )}
       />
-      {open && (
+      {createOpen && (
         <CrudModal
           title="Conectar número"
-          subtitle="Informe os dados fornecidos no painel da Meta."
-          submitLabel="Conectar conta"
+          subtitle="Dê um nome interno para a conta. O QR code é gerado na sequência."
+          submitLabel="Gerar QR code"
           pending={create.isPending}
           error={create.error ? (isApiError(create.error) ? create.error.message : 'Falha ao conectar.') : null}
-          onClose={closeModal}
+          onClose={closeCreateModal}
           onSubmit={(event) => {
             event.preventDefault();
             create.mutate(
+              { nome },
               {
-                nome,
-                phoneNumberId: phone,
-                wabaId: waba,
-                numeroExibicao: display,
-                versaoGraphApi: version,
-                accessToken: token,
-                fluxoEntradaPublicId: entryFlow || undefined,
+                onSuccess: (result) => {
+                  closeCreateModal();
+                  openQrModal(result);
+                },
               },
-              { onSuccess: closeModal },
             );
           }}
         >
@@ -173,48 +175,79 @@ export function WhatsAppAccountsView() {
                 placeholder="Ex.: Número principal"
               />
             </label>
-            <label>
-              <span>Phone Number ID</span>
-              <input value={phone} onChange={(event) => setPhone(event.target.value)} required />
-            </label>
-            <label>
-              <span>WABA ID</span>
-              <input value={waba} onChange={(event) => setWaba(event.target.value)} required />
-            </label>
-            <label>
-              <span>Número de exibição</span>
-              <input value={display} onChange={(event) => setDisplay(event.target.value)} />
-            </label>
-            <label>
-              <span>Versão Graph API</span>
-              <input value={version} onChange={(event) => setVersion(event.target.value)} required />
-            </label>
-            <label className={styles.wide}>
-              <span>Fluxo de entrada</span>
-              <select value={entryFlow} onChange={(event) => setEntryFlow(event.target.value)}>
-                <option value="">Somente registrar mensagens</option>
-                {publishedFlows.data?.dados.map((flow) => (
-                  <option key={flow.public_id} value={flow.public_id}>
-                    {flow.nome} (v{flow.versao})
-                  </option>
-                ))}
-              </select>
-              <small>Somente fluxos publicados podem iniciar a automação.</small>
-            </label>
-            <label className={styles.wide}>
-              <span>Access token</span>
-              <input
-                type="password"
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-                required
-                autoComplete="off"
-              />
-              <small>O token não será exibido novamente.</small>
-            </label>
           </div>
         </CrudModal>
       )}
+      {qrAccount && (
+        <WhatsAppQrModal
+          accountId={qrAccount.id}
+          initialQrCodeBase64={qrAccount.qrCodeBase64}
+          onClose={() => setQrAccount(null)}
+        />
+      )}
+      {disconnecting && (
+        <ConfirmDialog
+          title={`Desconectar ${disconnecting.nome}?`}
+          description="A sessão pareada é encerrada. A conta continua cadastrada e pode ser reconectada depois com um novo QR code."
+          pending={disconnect.isPending}
+          error={disconnect.error ? (isApiError(disconnect.error) ? disconnect.error.message : 'Falha ao desconectar.') : null}
+          onCancel={() => setDisconnecting(undefined)}
+          onConfirm={() => disconnect.mutate(disconnecting.public_id, { onSuccess: () => setDisconnecting(undefined) })}
+        />
+      )}
     </AppShell>
+  );
+}
+
+function WhatsAppQrModal({
+  accountId,
+  initialQrCodeBase64,
+  onClose,
+}: {
+  accountId: string;
+  initialQrCodeBase64?: string;
+  onClose: () => void;
+}) {
+  const [qrCodeBase64, setQrCodeBase64] = useState(initialQrCodeBase64);
+  const detail = useWhatsAppAccount(accountId);
+  const reconnect = useReconnectWhatsApp();
+  const account = detail.data;
+  const connected = account?.status === 'CONECTADO';
+
+  return (
+    <CrudModal
+      title={connected ? 'Número conectado' : 'Escaneie o QR code'}
+      subtitle={
+        connected
+          ? 'O WhatsApp já está pronto para uso.'
+          : 'Abra o WhatsApp no celular, acesse Aparelhos conectados e escaneie o código abaixo.'
+      }
+      submitLabel={connected ? 'Concluir' : 'Gerar novo código'}
+      pending={reconnect.isPending}
+      error={
+        reconnect.error ? (isApiError(reconnect.error) ? reconnect.error.message : 'Falha ao gerar novo código.') : null
+      }
+      onClose={onClose}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (connected) {
+          onClose();
+          return;
+        }
+        reconnect.mutate(accountId, { onSuccess: (result) => setQrCodeBase64(result.qrCodeBase64) });
+      }}
+    >
+      <div className={styles.qrWrap}>
+        {connected ? (
+          <div className={styles.success}>Conectado como {account.numero_exibicao ?? 'número pareado'}.</div>
+        ) : qrCodeBase64 ? (
+          // eslint-disable-next-line @next/next/no-img-element -- data URI, sem otimização de imagem aplicável
+          <img src={qrCodeBase64} alt="QR code para parear o WhatsApp" className={styles.qrImage} />
+        ) : (
+          <p>Gerando QR code...</p>
+        )}
+        {!connected && account && <Badge tone={whatsappStatusTone(account.status)}>{whatsappStatusLabel(account.status)}</Badge>}
+      </div>
+    </CrudModal>
   );
 }
