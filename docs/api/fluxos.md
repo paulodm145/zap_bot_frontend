@@ -2,9 +2,9 @@
 
 ## Objetivo e permissões
 
-Qualquer usuário autenticado pode listar, detalhar e simular fluxos. Criar,
-editar, publicar e excluir exige papel `ADMIN_TENANT` ou `GESTOR`. O access
-token deve ser enviado como `Authorization: Bearer <token>`.
+As rotas permitem ao usuário autenticado do tenant listar, editar, publicar,
+simular e excluir fluxos do próprio banco físico. O access token deve ser
+enviado como `Authorization: Bearer <token>`.
 
 O backend nunca recebe `tenant_id`, nome de banco ou conexão nas rotas. O
 tenant é resolvido pelo e-mail e pelo `tenantId` do JWT.
@@ -149,7 +149,7 @@ implementadas no backend e publicadas no OpenAPI.
 
 ## Simulador
 
-A simulação sempre usa uma versão publicada e não chama a Cloud API. Na
+A simulação sempre usa uma versão publicada e não chama a Evolution API. Na
 primeira chamada envie:
 
 ```json

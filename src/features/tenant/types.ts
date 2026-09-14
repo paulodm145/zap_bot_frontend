@@ -34,6 +34,19 @@ export type Conversation = {
   ultima_mensagem?: string | null;
   updated_at: string;
 };
+export type WhatsAppAccountStatus = 'CONECTANDO' | 'CONECTADO' | 'DESCONECTADO';
+export type WhatsAppAccount = {
+  public_id: string;
+  nome: string;
+  instance_name: string;
+  instance_id: string | null;
+  numero_exibicao?: string | null;
+  status: WhatsAppAccountStatus;
+  ultima_sincronizacao_at?: string | null;
+  ultimo_erro_codigo?: string | null;
+  ultimo_erro_mensagem?: string | null;
+  ativo: boolean;
+};
 export type Message = {
   public_id: string;
   direcao: 'ENTRADA' | 'SAIDA';

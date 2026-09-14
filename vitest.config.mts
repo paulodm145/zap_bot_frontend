@@ -10,6 +10,7 @@ export default defineConfig({
       reporter: ['text', 'json-summary'],
       include: [
         'src/features/flows/flow-graph.ts',
+        'src/features/tenant/whatsapp.ts',
         'src/lib/api/api-error.ts',
         'src/lib/api/api-client.ts',
         'src/lib/api/internal-api-client.ts',
