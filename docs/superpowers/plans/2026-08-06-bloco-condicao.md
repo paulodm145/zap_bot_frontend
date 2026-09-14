@@ -1,3 +1,12 @@
+> **Status (2026-09-14):** implementado na branch `feat/condicao-construtor-regras`
+> (16 commits, ago/2026) e mesclado em `main` nesta data via
+> `feat/construtor-regras-condicao`, resgatando trabalho que já estava pronto
+> mas nunca havia sido integrado. Validado contra o `main` atual: typecheck,
+> lint, suíte de testes (77 testes, `flow-rules.ts` com 100% de statements) e
+> build aprovados. Os checkboxes abaixo não foram marcados individualmente
+> retroativamente — o plano documenta como o recurso foi construído
+> originalmente; o estado atual do código é a fonte de verdade.
+
 # Construtor de regras do bloco de condição — plano de implementação
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
