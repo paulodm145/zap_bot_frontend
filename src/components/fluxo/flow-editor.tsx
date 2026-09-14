@@ -62,6 +62,10 @@ import {
   type FlowBlockCatalogItem,
   type FlowBlockType,
 } from '@/hooks/flows/use-flow-block-catalog';
+import { limiteDeRegras } from '@/features/flows/flow-catalog';
+import { nextRuleId, rulesToEdges, variaveisDisponiveis } from '@/features/flows/flow-rules';
+import type { FlowRule } from '@/features/flows/types';
+import { ConditionRulesEditor } from './condition-rules-editor';
 
 type FlowData = FlowNodeData;
 type Tool = {
@@ -127,34 +131,36 @@ const prototypeNodes: Node<FlowData>[] = [
     },
   },
   {
-    id: 'no_2',
-    type: 'flowNode',
-    position: { x: 310, y: 180 },
-    data: {
-      label: 'Condição',
-      detail: 'Identificar intenção',
-      kind: 'condition',
-      icon: 'condition',
-      content: 'Escolha uma opção para continuar.',
-    },
-  },
-  {
     id: 'no_3',
     type: 'flowNode',
-    position: { x: 90, y: 345 },
+    position: { x: 310, y: 180 },
     data: {
       label: 'Capturar resposta',
       detail: 'Identificar solicitação',
       kind: 'capture',
       icon: 'capture',
-      content: 'Digite uma opção para continuar.',
+      content: 'Digite 1 para falar com um atendente.',
       variable: 'cliente.opcao',
+    },
+  },
+  {
+    id: 'no_2',
+    type: 'flowNode',
+    position: { x: 310, y: 320 },
+    data: {
+      label: 'Condição',
+      detail: 'Identificar intenção',
+      kind: 'condition',
+      icon: 'condition',
+      content: '',
+      regras: [{ id: 'regra_1', variavel: 'cliente.opcao', operador: '==' as const, valor: '1', destinoId: 'no_4' }],
+      padraoId: 'no_5',
     },
   },
   {
     id: 'no_4',
     type: 'flowNode',
-    position: { x: 530, y: 345 },
+    position: { x: 530, y: 470 },
     data: {
       label: 'Direcionar setor',
       detail: 'Escolha um setor',
@@ -164,12 +170,25 @@ const prototypeNodes: Node<FlowData>[] = [
       sectorId: '',
     },
   },
+  {
+    id: 'no_5',
+    type: 'flowNode',
+    position: { x: 90, y: 470 },
+    data: {
+      label: 'Mensagem',
+      detail: 'Não entendi',
+      kind: 'message',
+      icon: 'message',
+      content: 'Não entendi sua resposta. Vou te encaminhar para um atendente.',
+    },
+  },
 ];
+// As arestas da condição saem das regras do próprio bloco; aqui ficam apenas as
+// ligações simples entre os demais blocos. `no_1` é o primeiro do array porque
+// `graphToDefinition` deriva `noInicial` dessa posição.
 const prototypeEdges: Edge[] = [
-  { id: 'e1', source: 'no_1', target: 'no_2', ...edgeDefaults },
-  // O motor interpreta a regra; rótulo livre quebra a execução da condição.
-  { id: 'e2', source: 'no_2', target: 'no_3', label: 'cliente.opcao == "1"', ...edgeDefaults },
-  { id: 'e3', source: 'no_2', target: 'no_4', label: 'Padrão', ...edgeDefaults },
+  { id: 'e1', source: 'no_1', target: 'no_3', ...edgeDefaults },
+  { id: 'e2', source: 'no_3', target: 'no_2', ...edgeDefaults },
 ];
 const visualByType: Record<FlowBlockType, { icon: typeof MessageSquareText; tone: string }> = {
   mensagem: { icon: MessageSquareText, tone: 'message' },
@@ -231,6 +250,12 @@ function FlowEditorContent({
   const canvasRef = useRef<HTMLElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const selected = useMemo(() => nodes.find((node) => node.id === selectedId) ?? null, [nodes, selectedId]);
+  // As arestas da condição são derivadas das regras; o estado `edges` guarda
+  // apenas as ligações dos demais blocos, para não existirem duas cópias.
+  const displayEdges = useMemo(
+    () => [...edges, ...nodes.flatMap((node) => rulesToEdges(node).map((edge) => ({ ...edge, ...edgeDefaults })))],
+    [edges, nodes],
+  );
   const tools = useMemo(
     () => (catalog.data?.blocos ?? []).map(catalogItemToTool).filter((tool): tool is Tool => tool !== null),
     [catalog.data],
@@ -241,7 +266,7 @@ function FlowEditorContent({
    * limpa marcações antigas, para o erro não sobreviver à correção.
    */
   const markInvalidBlocks = useCallback(() => {
-    const issues = validateGraph(nodes, edges);
+    const issues = validateGraph(nodes, displayEdges);
     setNodes((current) =>
       current.map((node) => ({
         ...node,
@@ -251,11 +276,11 @@ function FlowEditorContent({
     const first = issues[0];
     if (first) setSelectedId(first.nodeId);
     return issues.length === 0;
-  }, [edges, nodes, setNodes]);
+  }, [displayEdges, nodes, setNodes]);
 
   const save = useCallback(async () => {
     if (!canManage || !markInvalidBlocks()) return;
-    const definition = graphToDefinition(nodes, edges);
+    const definition = graphToDefinition(nodes, displayEdges);
     try {
       // Sem flowId o fluxo ainda não existe: criar é a única forma de não
       // descartar o que foi montado em /fluxos/novo.
@@ -266,13 +291,50 @@ function FlowEditorContent({
     } catch {
       /* erro exibido no cabeçalho */
     }
-  }, [canManage, createFlow, edges, flowId, flowName, markInvalidBlocks, nodes, saveFlow]);
+  }, [canManage, createFlow, displayEdges, flowId, flowName, markInvalidBlocks, nodes, saveFlow]);
   const connect = useCallback(
     (connection: Connection) => {
-      if (nodes.find((node) => node.id === connection.source)?.data.kind === 'team') return;
+      const source = nodes.find((node) => node.id === connection.source);
+      if (source?.data.kind === 'team') return;
+      if (source?.data.kind === 'condition') {
+        // Arrastar continua funcionando: vira uma regra nova já com o destino.
+        const disponiveis = variaveisDisponiveis(nodes, displayEdges, source.id);
+        setNodes((current) =>
+          current.map((node) => {
+            if (node.id !== source.id) return node;
+            const regras = node.data.regras ?? [];
+            const rule: FlowRule = {
+              id: nextRuleId(regras),
+              variavel: disponiveis.length === 1 ? disponiveis[0] : '',
+              operador: '==',
+              valor: '',
+              destinoId: connection.target ?? '',
+            };
+            return { ...node, data: { ...node.data, regras: [...regras, rule] } };
+          }),
+        );
+        setSelectedId(source.id);
+        return;
+      }
       setEdges((current) => addEdge({ ...connection, ...edgeDefaults }, current));
     },
-    [nodes, setEdges],
+    [displayEdges, nodes, setEdges, setNodes],
+  );
+
+  /** Um destino apagado deixaria a regra apontando para um bloco inexistente. */
+  const limparReferencias = useCallback(
+    (ids: Set<string>) =>
+      setNodes((current) =>
+        current.map((node) => {
+          if (node.data.kind !== 'condition') return node;
+          const regras = (node.data.regras ?? []).map((rule) =>
+            ids.has(rule.destinoId) ? { ...rule, destinoId: '' } : rule,
+          );
+          const padraoId = ids.has(node.data.padraoId ?? '') ? '' : node.data.padraoId;
+          return { ...node, data: { ...node.data, regras, padraoId } };
+        }),
+      ),
+    [setNodes],
   );
 
   function createNode(tool: Tool, position: { x: number; y: number }) {
@@ -325,6 +387,7 @@ function FlowEditorContent({
 
   function deleteSelected() {
     if (!selectedId) return;
+    limparReferencias(new Set([selectedId]));
     setNodes((current) => current.filter((node) => node.id !== selectedId));
     setEdges((current) => current.filter((edge) => edge.source !== selectedId && edge.target !== selectedId));
     setSelectedId(null);
@@ -336,13 +399,18 @@ function FlowEditorContent({
       await publishFlow.mutateAsync();
     } catch (error) {
       if (isApiError(error) && error.status === 422) {
-        const details = error.details as { erros?: Array<{ noId?: string; mensagem: string }> } | undefined;
+        const details = error.details as
+          { erros?: Array<{ noId?: string; campo?: string; mensagem: string }> } | undefined;
         const errors = details?.erros ?? [];
         setNodes((current) =>
-          current.map((node) => ({
-            ...node,
-            data: { ...node.data, validationError: errors.find((item) => item.noId === node.id)?.mensagem },
-          })),
+          current.map((node) => {
+            const item = errors.find((erro) => erro.noId === node.id);
+            if (!item) return { ...node, data: { ...node.data, validationError: undefined } };
+            // `campo` chega como `dados.regras[0].se`; o índice identifica a regra.
+            const posicao = /dados\.regras\[(\d+)\]/.exec(item.campo ?? '')?.[1];
+            const mensagem = posicao ? `${Number(posicao) + 1}ª regra: ${item.mensagem}` : item.mensagem;
+            return { ...node, data: { ...node.data, validationError: mensagem } };
+          }),
         );
       }
     }
@@ -385,7 +453,7 @@ function FlowEditorContent({
                 : 'Falha ao salvar'
               : saved
                 ? 'Alterações salvas'
-                : `${nodes.length} blocos · ${edges.length} conexões`}
+                : `${nodes.length} blocos · ${displayEdges.length} conexões`}
           </small>
         </div>
         <div className={styles.headerActions}>
@@ -473,7 +541,7 @@ function FlowEditorContent({
       >
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={displayEdges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -486,6 +554,7 @@ function FlowEditorContent({
           onPaneClick={() => setSelectedId(null)}
           onNodesDelete={(deleted) => {
             const ids = new Set(deleted.map((node) => node.id));
+            limparReferencias(ids);
             setEdges((current) => current.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)));
             if (selectedId && ids.has(selectedId)) setSelectedId(null);
           }}
@@ -518,7 +587,34 @@ function FlowEditorContent({
               <span>Nome do bloco</span>
               <input value={selected.data.detail} onChange={(event) => updateSelected('detail', event.target.value)} />
             </label>
-            {selected.data.kind === 'team' ? (
+            {selected.data.kind === 'condition' ? (
+              <ConditionRulesEditor
+                key={selected.id}
+                regras={selected.data.regras ?? []}
+                padraoId={selected.data.padraoId ?? ''}
+                variaveis={variaveisDisponiveis(nodes, displayEdges, selected.id)}
+                blocos={nodes
+                  .filter((node) => node.id !== selected.id)
+                  .map((node) => ({ id: node.id, rotulo: `${node.data.label}: ${node.data.detail}` }))}
+                operadores={catalog.data?.linguagemCondicao?.operadores ?? ['==', '!=']}
+                maximoRegras={limiteDeRegras(catalog.data)}
+                disabled={!canManage}
+                onRulesChange={(regras) =>
+                  setNodes((current) =>
+                    current.map((node) =>
+                      node.id === selected.id ? { ...node, data: { ...node.data, regras } } : node,
+                    ),
+                  )
+                }
+                onPadraoChange={(padraoId) =>
+                  setNodes((current) =>
+                    current.map((node) =>
+                      node.id === selected.id ? { ...node, data: { ...node.data, padraoId } } : node,
+                    ),
+                  )
+                }
+              />
+            ) : selected.data.kind === 'team' ? (
               <>
                 <label>
                   <span>Setor de destino</span>

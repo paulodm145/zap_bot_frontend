@@ -2,26 +2,30 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api/api-client';
+import { limiteDeRegras } from '@/features/flows/flow-catalog';
+import type {
+  FlowBlockCatalog,
+  FlowBlockCatalogItem,
+  FlowBlockConnections,
+  FlowBlockField,
+  FlowBlockFieldType,
+  FlowBlockType,
+  FlowConditionLanguage,
+  FlowGraphLimits,
+} from '@/features/flows/flow-catalog';
 
-export type FlowBlockType = 'mensagem' | 'captura_resposta' | 'condicao' | 'direcionar_setor';
-
-export type FlowBlockCatalogItem = {
-  tipo: FlowBlockType;
-  nome: string;
-  descricao: string;
-  icone: string;
-  comportamento: {
-    pausaExecucao: boolean;
-    produzSaida: boolean;
-    podeFinalizarFluxo: boolean;
-  };
-  configuracaoInicial: Record<string, unknown>;
+// Reexport for backward compatibility
+export type {
+  FlowBlockCatalog,
+  FlowBlockCatalogItem,
+  FlowBlockConnections,
+  FlowBlockField,
+  FlowBlockFieldType,
+  FlowBlockType,
+  FlowConditionLanguage,
+  FlowGraphLimits,
 };
-
-export type FlowBlockCatalog = {
-  schemaVersao: 1;
-  blocos: FlowBlockCatalogItem[];
-};
+export { limiteDeRegras };
 
 export function useFlowBlockCatalog() {
   return useQuery({

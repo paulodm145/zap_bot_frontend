@@ -1,0 +1,192 @@
+.builder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Mesmo respiro dos demais campos do painel de propriedades, que separam-se
+     por `margin-top: 16px`; sem ele o construtor encosta no campo anterior. */
+  margin-top: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+}
+
+.empty strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.empty p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.limit {
+  margin: 0;
+  font-size: 12px;
+  color: var(--warning);
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.ruleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.position {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-600);
+}
+
+.ruleActions {
+  display: flex;
+  gap: 4px;
+}
+
+.ruleActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ruleActions button:hover:not(:disabled) {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.ruleActions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/*
+ * Qualificados por `.builder` (não só `.rule`/`.fallback`) para vencer, em
+ * especificidade, os seletores descendentes `.properties label`,
+ * `.properties label > span` e `.properties input` de `flow-editor.module.css`
+ * — CSS Modules escopa nomes de classe, não o alcance do seletor, então esses
+ * dois arquivos podem colidir quando este componente for aninhado dentro do
+ * elemento com a classe `.properties` (Task 6).
+ */
+.builder .rule label,
+.builder .fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* `.properties label` declara `margin-top: 16px`, que dobraria o espaçamento
+     interno dos cartões de regra. */
+  margin: 0;
+}
+
+.builder .rule label > span,
+.builder .fallback > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.builder .rule select,
+.builder .rule input,
+.builder .fallback select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+}
+
+.builder .rule select:focus,
+.builder .rule input:focus,
+.builder .fallback select:focus {
+  border-color: var(--green-600);
+}
+
+/*
+ * `.properties input` de `flow-editor.module.css` declara `outline: none` e
+ * alcança os campos deste componente quando ele é montado no painel (Task 6).
+ * O anel próprio garante que o foco não fique indicado só pela cor da borda.
+ */
+.builder .rule select:focus-visible,
+.builder .rule input:focus-visible,
+.builder .fallback select:focus-visible {
+  outline: 2px solid var(--green-600);
+  outline-offset: 2px;
+}
+
+.builder .rule select:disabled,
+.builder .rule input:disabled,
+.builder .fallback select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fallback {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.valueWarning {
+  /* `.rule` já aplica `gap: 8px` entre seus filhos; a margem negativa
+     aproxima o aviso do campo "Valor" ao qual ele se refere, como antes de
+     `<p>` deixar de ser filho do `<label>`. */
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--danger);
+}
