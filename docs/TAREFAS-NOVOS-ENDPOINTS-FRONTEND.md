@@ -48,3 +48,36 @@
   infraestrutura de teste de componente/hook (Testing Library + ambiente
   jsdom não configurados), só testes de lógica pura — construir essa
   infraestrutura ficou fora de escopo desta etapa.
+- [x] **NE-07 — Resgata o construtor de regras do bloco de condição**
+  Branch: `feat/construtor-regras-condicao` · Commit de merge:
+  `merge: integra construtor de regras do bloco de condicao`
+  Relatado pelo usuário: o bloco de condição não permitia montar regras de
+  redirecionamento manualmente (o campo de mensagem era descartado no
+  salvamento; sem seletor de operadores lógicos). Investigação encontrou uma
+  implementação completa já pronta, de agosto/2026
+  (`feat/condicao-construtor-regras`, 16 commits), nunca mesclada em `main`.
+  Resgatada via merge (único conflito trivial em `vitest.config.mts`,
+  resolvido); nenhum arquivo de `chat-view`/`whatsapp-accounts` recente foi
+  afetado, pois a branch nunca os tocou.
+  Aceite: bloco de condição agora mostra um construtor "SE variável
+  [é igual a/é diferente de] valor ENTÃO vá para bloco", com reordenação por
+  botões e destino "senão"; contrato do backend (`dados.regras`/`dados.
+  padrao`) inalterado; lint, tipos, 76 testes e build aprovados.
+- [x] **NE-08 — Preserva a posição dos blocos no canvas ao salvar/recarregar**
+  Branch: `feat/construtor-regras-condicao` (mesma do NE-07)
+  Relatado pelo usuário: ao salvar um fluxo e reabri-lo, os blocos apareciam
+  reorganizados numa grade, misturando o layout que o usuário tinha montado.
+  Causa raiz: o contrato do backend (`definicaoFluxoSchema`, `.strict()`)
+  nunca teve campo de posição — `definitionToGraph` sempre recalculava um
+  layout em grade a partir do índice do nó, descartando qualquer arranjo
+  feito na tela.
+  Exigiu mudança de contrato no backend (`backend_zap_bot`, branch
+  `feat/posicao-no-fluxo`): campo opcional `posicao: { x, y }` em cada nó,
+  documentado em `docs/schemas/fluxo-json.md`; motor de execução não lê o
+  campo (puramente visual).
+  Aceite: `graphToDefinition` serializa `node.position` em `posicao`;
+  `definitionToGraph` usa `posicao` quando presente e só recorre à grade para
+  fluxos antigos sem essa informação; teste dedicado cobre que a posição
+  exata é preservada sem recálculo; teste de integração no backend confirma
+  o round-trip via `POST`→`GET /fluxos/:id`; lint, tipos, testes e build
+  aprovados nos dois repositórios.

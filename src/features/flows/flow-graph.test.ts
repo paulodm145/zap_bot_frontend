@@ -38,13 +38,23 @@ describe('flow graph contract conversion', () => {
     });
     expect(graph.nodes).toHaveLength(4);
     expect(graph.nodes[0].data.content).toBe('Olá');
-    expect(graph.edges).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ source: 'inicio', target: 'decidir' }),
-        expect.objectContaining({ source: 'decidir', target: 'fiscal', label: 'opcao == "1"' }),
-        expect.objectContaining({ source: 'decidir', target: 'fim', label: 'Padrão' }),
-      ]),
-    );
+    // As arestas da condição são derivadas por rulesToEdges, não devolvidas aqui.
+    expect(graph.edges).toEqual([expect.objectContaining({ source: 'inicio', target: 'decidir' })]);
+    expect(graph.nodes[1].data.regras).toEqual([
+      { id: 'decidir-regra-1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'fiscal' },
+    ]);
+    expect(graph.nodes[1].data.padraoId).toBe('fim');
+  });
+
+  it('keeps an unsupported expression visible as an incomplete rule', () => {
+    const graph = definitionToGraph({
+      schemaVersao: 1,
+      noInicial: 'decidir',
+      nos: [{ id: 'decidir', tipo: 'condicao', dados: { regras: [{ se: 'Suporte', entao: 'a' }], padrao: 'b' } }],
+    });
+    expect(graph.nodes[0].data.regras).toEqual([
+      { id: 'decidir-regra-1', variavel: '', operador: '==', valor: 'Suporte', destinoId: 'a' },
+    ]);
   });
 
   it('serializes visual message connections and sector nodes', () => {
@@ -69,8 +79,14 @@ describe('flow graph contract conversion', () => {
       schemaVersao: 1,
       noInicial: 'inicio',
       nos: [
-        { id: 'inicio', tipo: 'mensagem', dados: { texto: 'Olá' }, proximo: 'setor' },
-        { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' } },
+        {
+          id: 'inicio',
+          tipo: 'mensagem',
+          dados: { texto: 'Olá' },
+          proximo: 'setor',
+          posicao: { x: 0, y: 0 },
+        },
+        { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' }, posicao: { x: 0, y: 100 } },
       ],
     });
   });
@@ -85,7 +101,12 @@ describe('flow graph contract conversion', () => {
     };
     const graph = definitionToGraph(definition);
     expect(graph.nodes[0].data.sectorId).toBe('11111111-1111-4111-8111-111111111111');
-    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual(definition);
+    // A definição de entrada não tinha `posicao`: definitionToGraph gera uma
+    // posição inicial em grade, que passa a ser salva no primeiro round-trip.
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual({
+      ...definition,
+      nos: [{ ...definition.nos[0], posicao: { x: 120, y: 60 } }],
+    });
   });
 
   it('round-trips the supported response capture node', () => {
@@ -99,6 +120,7 @@ describe('flow graph contract conversion', () => {
       id: 'captura',
       tipo: 'captura_resposta',
       dados: { variavel: 'opcao', mensagem: 'Qual opção?' },
+      posicao: { x: 120, y: 60 },
     });
   });
 
@@ -116,23 +138,89 @@ describe('flow graph contract conversion', () => {
     });
   });
 
-  // `padrao` é obrigatório em noCondicaoSchema. Sem aresta "Padrão" o editor
-  // omitia o campo e o backend rejeitava a definição inteira.
-  it('always emits a default branch for condition nodes', () => {
+  it('serializes structured rules and the default branch', () => {
     const nodes: FlowGraph['nodes'] = [
-      condition('decidir'),
+      node('decidir', {
+        kind: 'condition',
+        icon: 'condition',
+        regras: [
+          { id: 'regra_1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'a' },
+          { id: 'regra_2', variavel: 'opcao', operador: '!=', valor: '2', destinoId: 'b' },
+        ],
+        padraoId: 'b',
+      }),
       message('a', 'A'),
       message('b', 'B'),
     ];
-    const edges = [
-      { id: 'e1', source: 'decidir', target: 'a', label: 'opcao == "1"' },
-      { id: 'e2', source: 'decidir', target: 'b', label: 'opcao == "2"' },
+    expect(graphToDefinition(nodes, []).nos[0]).toEqual({
+      id: 'decidir',
+      tipo: 'condicao',
+      dados: {
+        regras: [
+          { se: 'opcao == "1"', entao: 'a' },
+          { se: 'opcao != "2"', entao: 'b' },
+        ],
+        padrao: 'b',
+      },
+      posicao: { x: 0, y: 0 },
+    });
+  });
+
+  it('omits incomplete rules when serializing', () => {
+    const nodes: FlowGraph['nodes'] = [
+      node('decidir', {
+        kind: 'condition',
+        icon: 'condition',
+        regras: [
+          { id: 'regra_1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'a' },
+          { id: 'regra_2', variavel: '', operador: '==', valor: '', destinoId: '' },
+        ],
+        padraoId: 'b',
+      }),
     ];
-    const node = graphToDefinition(nodes, edges).nos[0] as {
-      dados: { regras: Array<{ se: string; entao: string }>; padrao: string };
+    const dados = (graphToDefinition(nodes, []).nos[0] as { dados: { regras: unknown[] } }).dados;
+    expect(dados.regras).toHaveLength(1);
+  });
+
+  it('round-trips a condition through the backend contract', () => {
+    const definition = {
+      schemaVersao: 1 as const,
+      noInicial: 'decidir',
+      nos: [
+        { id: 'decidir', tipo: 'condicao', dados: { regras: [{ se: 'opcao == "1"', entao: 'a' }], padrao: 'b' } },
+        { id: 'a', tipo: 'mensagem', dados: { texto: 'A' } },
+        { id: 'b', tipo: 'mensagem', dados: { texto: 'B' } },
+      ],
     };
-    expect(node.dados.padrao).toBe('b');
-    expect(node.dados.regras).toEqual([{ se: 'opcao == "1"', entao: 'a' }]);
+    const graph = definitionToGraph(definition);
+    // Mesma observação do teste de setor: sem `posicao` na entrada, a grade
+    // inicial é o que sai no primeiro round-trip.
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual({
+      ...definition,
+      nos: [
+        { ...definition.nos[0], posicao: { x: 120, y: 60 } },
+        { ...definition.nos[1], posicao: { x: 400, y: 60 } },
+        { ...definition.nos[2], posicao: { x: 680, y: 60 } },
+      ],
+    });
+  });
+
+  // Antes desta correção, a posição salva era descartada: definitionToGraph
+  // sempre recalculava uma grade, e o usuário via os blocos se reorganizarem
+  // sozinhos a cada vez que reabria o fluxo.
+  it('preserves the exact position saved for each block, without recomputing the grid', () => {
+    const definition = {
+      schemaVersao: 1 as const,
+      noInicial: 'inicio',
+      nos: [
+        { id: 'inicio', tipo: 'mensagem', dados: { texto: 'A' }, posicao: { x: 733, y: -42 } },
+        { id: 'fim', tipo: 'mensagem', dados: { texto: 'B' }, posicao: { x: -10, y: 900 } },
+      ],
+    };
+    const graph = definitionToGraph(definition);
+    expect(graph.nodes[0].position).toEqual({ x: 733, y: -42 });
+    expect(graph.nodes[1].position).toEqual({ x: -10, y: 900 });
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual(definition);
   });
 
   // noInicial precisa acompanhar o nó de entrada real, não a ordem do array.
@@ -182,47 +270,105 @@ describe('flow graph validation', () => {
     ]);
   });
 
-  it('rejects a condition with a single outgoing branch', () => {
-    const nodes = [condition('decidir'), message('a', 'A')];
-    const issues = validateGraph(nodes, [{ id: 'e1', source: 'decidir', target: 'a', label: 'x' }]);
-    expect(issues).toEqual([
-      { nodeId: 'decidir', message: 'Conecte ao menos duas saídas: uma regra e o caminho padrão.' },
+  it('rejects a condition without rules', () => {
+    const nodes = [condition('decidir')];
+    expect(validateGraph(nodes, [])).toEqual([{ nodeId: 'decidir', message: 'Adicione ao menos uma regra.' }]);
+  });
+
+  it('points at the rule that is missing a destination', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [
+          { id: 'regra_1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'a' },
+          { id: 'regra_2', variavel: 'opcao', operador: '==', valor: '2', destinoId: '' },
+        ],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    const edges = [{ id: 'e1', source: 'captura', target: 'decidir' }];
+    expect(validateGraph(nodes, edges)).toEqual([
+      { nodeId: 'decidir', message: 'Complete a 2ª regra: falta escolher o destino.' },
     ]);
   });
 
-  it('accepts a condition with a rule and a default branch', () => {
-    const nodes = [condition('decidir'), message('a', 'A'), message('b', 'B')];
-    const issues = validateGraph(nodes, [
-      { id: 'e1', source: 'decidir', target: 'a', label: 'opcao == "1"' },
-      { id: 'e2', source: 'decidir', target: 'b', label: 'Padrão' },
-    ]);
-    expect(issues).toEqual([]);
-  });
-});
-
-// O motor interpreta cada regra com `interpretarCondicao` e lança ValidacaoError
-// fora do formato `variavel == "valor"`. O schema aceita qualquer string, então
-// só a checagem local evita um fluxo que publica mas quebra ao simular.
-describe('condition rule expressions', () => {
-  it('rejects a branch label that is not a comparison', () => {
-    const nodes = [condition('decidir'), message('a', 'A'), message('b', 'B')];
-    const issues = validateGraph(nodes, [
-      { id: 'e1', source: 'decidir', target: 'a', label: 'Suporte' },
-      { id: 'e2', source: 'decidir', target: 'b', label: 'Padrão' },
-    ]);
-    expect(issues).toEqual([
-      { nodeId: 'decidir', message: 'Use o formato variavel == "valor" nas saídas da condição.' },
+  it('rejects a condition without a default branch', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'a' }],
+        padraoId: '',
+      }),
+      message('a', 'A'),
+    ];
+    expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([
+      { nodeId: 'decidir', message: 'Escolha para onde ir quando nenhuma regra for verdadeira.' },
     ]);
   });
 
-  it('accepts comparison operators supported by the engine', () => {
-    const nodes = [condition('decidir'), message('a', 'A'), message('b', 'B'), message('c', 'C')];
-    const issues = validateGraph(nodes, [
-      { id: 'e1', source: 'decidir', target: 'a', label: 'cliente.opcao == "1"' },
-      { id: 'e2', source: 'decidir', target: 'b', label: 'cliente.opcao != "2"' },
-      { id: 'e3', source: 'decidir', target: 'c', label: 'Padrão' },
+  it('rejects a rule whose variable is never captured before the condition', () => {
+    const nodes = [
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'cliente.opcao', operador: '==', valor: '1', destinoId: 'a' }],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    expect(validateGraph(nodes, [])).toEqual([
+      { nodeId: 'decidir', message: 'A variável cliente.opcao não é capturada antes desta condição.' },
     ]);
-    expect(issues).toEqual([]);
+  });
+
+  it('rejects a value containing quotes', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'opcao', operador: '==', valor: 'a"b', destinoId: 'a' }],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([
+      { nodeId: 'decidir', message: 'O valor da 1ª regra não pode conter aspas.' },
+    ]);
+  });
+
+  it('rejects a rule whose serialized expression is too long', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'opcao', operador: '==', valor: 'x'.repeat(300), destinoId: 'a' }],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([
+      { nodeId: 'decidir', message: 'A 1ª regra é longa demais; reduza o valor.' },
+    ]);
+  });
+
+  it('accepts a complete condition', () => {
+    const nodes = [
+      node('captura', { kind: 'capture', variable: 'opcao' }),
+      node('decidir', {
+        kind: 'condition',
+        regras: [{ id: 'regra_1', variavel: 'opcao', operador: '==', valor: '1', destinoId: 'a' }],
+        padraoId: 'b',
+      }),
+      message('a', 'A'),
+      message('b', 'B'),
+    ];
+    expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([]);
   });
 });
 

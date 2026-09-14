@@ -23,3 +23,31 @@ export type FlowDetail = FlowSummary & {
 };
 
 export type FlowVersion = { public_id: string; versao: number; definicao: FlowDefinition; created_at: string };
+
+export type FlowRuleOperator = '==' | '!=';
+
+export type FlowRule = {
+  /** Chave estável para render e reordenação; não é enviada ao backend. */
+  id: string;
+  variavel: string;
+  operador: FlowRuleOperator;
+  valor: string;
+  /** Vazio enquanto a regra estiver incompleta. */
+  destinoId: string;
+};
+
+export type FlowNodeData = {
+  label: string;
+  detail: string;
+  kind: string;
+  icon: string;
+  content: string;
+  sectorId?: string;
+  /** Nome da variável onde a captura guarda a resposta; exigido pelo backend. */
+  variable?: string;
+  /** Somente em blocos de condição. */
+  regras?: FlowRule[];
+  /** Somente em blocos de condição: destino quando nenhuma regra for verdadeira. */
+  padraoId?: string;
+  validationError?: string;
+};
