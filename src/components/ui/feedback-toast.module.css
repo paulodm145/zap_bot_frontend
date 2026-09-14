@@ -59,6 +59,25 @@
 .toast > button:hover {
   background: #fff0f2;
 }
+.success {
+  color: var(--green-800);
+  border-color: #a9e6cf;
+  border-left-color: var(--green-800);
+}
+.success .icon {
+  color: var(--green-800);
+  background: var(--green-100);
+}
+.success small,
+.success code {
+  color: var(--green-800);
+}
+.success > button {
+  color: var(--green-800);
+}
+.success > button:hover {
+  background: var(--green-100);
+}
 @keyframes toast-in {
   from {
     opacity: 0;
