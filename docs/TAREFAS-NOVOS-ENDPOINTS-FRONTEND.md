@@ -118,3 +118,21 @@
   Aceite: lint, tipos, 77 testes e build aprovados nos dois pontos; nenhum
   teste de componente foi adicionado (sem infraestrutura de Testing
   Library/jsdom neste repositório, mesma limitação já registrada no NE-06).
+- [x] **NE-11 — Corrige crash na tela de atendimento com mensagens reais**
+  Branch: `fix/crash-conteudo-mensagem`
+  Relatado pelo usuário: abrir uma conversa com mensagens reais quebrava a
+  tela inteira com "Objects are not valid as a React child (found: object
+  with keys {texto})". Causa: `Message.texto` nunca existe na resposta real
+  da API — só `conteudo`, que é `unknown` no contrato e varia por
+  `tipo`/`autor` (`{texto}` para texto, `{acao, motivo}` para notas
+  automáticas do sistema como direcionamento por fluxo). `ChatView`
+  renderizava `message.conteudo` direto quando `message.texto` era
+  `undefined`. Reproduzido com dado real do tenant de avaliação: uma nota
+  `{"acao":"DIRECIONOU_FLUXO","motivo":null}` criada pelo motor de fluxo.
+  Também corrigido: o campo de status de entrega da API é `status_entrega`,
+  não `status` — a bolha sempre mostrava a data por essa causa.
+  Aceite: nova função `messageBodyText` (`src/features/tenant/messages.ts`,
+  com testes) extrai o texto com segurança por tipo/autor, com rótulo
+  legível para as 5 ações de sistema e aviso genérico para conteúdo sem
+  texto (ex.: mídia); notas de sistema ganham estilo visual próprio
+  (centralizado, discreto); lint, tipos, 83 testes e build aprovados.

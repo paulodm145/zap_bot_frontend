@@ -50,10 +50,11 @@ export type WhatsAppAccount = {
 };
 export type Message = {
   public_id: string;
-  direcao: 'ENTRADA' | 'SAIDA';
+  direcao: 'ENTRADA' | 'SAIDA' | 'INTERNA';
   tipo: string;
-  texto?: string | null;
-  conteudo?: string | null;
-  status?: string;
+  autor: 'CONTATO' | 'BOT' | 'ATENDENTE' | 'SISTEMA';
+  /** Formato varia por `tipo`/`autor`: `{ texto }`, `{ acao, motivo }` etc. — nunca renderize direto. */
+  conteudo?: unknown;
+  status_entrega?: string;
   created_at: string;
 };
