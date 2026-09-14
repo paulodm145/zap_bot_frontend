@@ -15,6 +15,7 @@ import {
 } from '@/hooks/tenant/use-conversations';
 import { useMe } from '@/hooks/tenant/use-me';
 import { useSectors } from '@/hooks/tenant/use-sectors';
+import { messageBodyText } from '@/features/tenant/messages';
 import { isApiError } from '@/lib/api/api-error';
 import { CrudModal } from './crud-modal';
 import tenantStyles from './tenant.module.css';
@@ -145,11 +146,13 @@ export function ChatView() {
             <div className={styles.messages}>
               {messages.data?.dados.map((message) => (
                 <div
-                  className={`${styles.bubble} ${message.direcao === 'SAIDA' ? styles.out : ''}`}
+                  className={`${styles.bubble} ${
+                    message.autor === 'SISTEMA' ? styles.system : message.direcao === 'SAIDA' ? styles.out : ''
+                  }`}
                   key={message.public_id}
                 >
-                  {message.texto ?? message.conteudo ?? message.tipo}
-                  <small>{message.status ?? message.created_at}</small>
+                  {messageBodyText(message)}
+                  <small>{message.status_entrega ?? message.created_at}</small>
                 </div>
               ))}
             </div>

@@ -88,6 +88,14 @@
   align-self: flex-end;
   background: #d9fdd3;
 }
+.system {
+  align-self: center;
+  max-width: 85%;
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+}
 .bubble small {
   display: block;
   margin-top: 4px;
