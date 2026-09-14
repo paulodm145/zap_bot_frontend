@@ -151,6 +151,9 @@ export function ConditionRulesEditor({
                 value={rule.variavel}
                 onChange={(event) => atualizar(index, { variavel: event.target.value })}
                 disabled={disabled}
+                aria-describedby={
+                  rule.variavel && !variaveis.includes(rule.variavel) ? `${aspasMessageBaseId}-var-${rule.id}` : undefined
+                }
               >
                 <option value="">Selecione uma variável</option>
                 {variaveis.map((nome) => (
@@ -158,8 +161,20 @@ export function ConditionRulesEditor({
                     {nome}
                   </option>
                 ))}
+                {/* Valor salvo que não está mais entre as capturas disponíveis (renomeada
+                    ou removida) — mantido visível em vez de trocado por um <select> em
+                    branco sem explicação. */}
+                {rule.variavel && !variaveis.includes(rule.variavel) && (
+                  <option value={rule.variavel}>{rule.variavel} (não existe mais)</option>
+                )}
               </select>
             </label>
+            {rule.variavel && !variaveis.includes(rule.variavel) && (
+              <p id={`${aspasMessageBaseId}-var-${rule.id}`} className={styles.valueWarning}>
+                A variável “{rule.variavel}” não existe mais neste fluxo — foi renomeada ou o bloco que a capturava foi
+                removido. Escolha outra variável.
+              </p>
+            )}
             <label>
               <span>Comparação</span>
               <select
