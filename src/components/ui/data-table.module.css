@@ -100,11 +100,23 @@
 .right {
   text-align: right;
 }
+/*
+ * `width: 1%` com `white-space: nowrap` é o truque padrão para uma coluna
+ * "encolher ao conteúdo" dentro de `table-layout: fixed`: o navegador dá a
+ * ela só o espaço que o conteúdo (os ícones de ação) precisa e redistribui o
+ * resto entre as colunas de largura livre. Uma largura fixa em px aqui
+ * quebra assim que uma tela precisa de mais ações do que a que definiu o
+ * valor original — as demais colunas ficam espremidas ou os botões vazam
+ * da célula.
+ */
 .actionsColumn {
-  width: 96px;
+  width: 1%;
+  padding-right: 18px;
   text-align: right;
+  white-space: nowrap;
 }
 .rowActions {
+  padding-right: 18px;
   text-align: right;
   white-space: nowrap;
 }

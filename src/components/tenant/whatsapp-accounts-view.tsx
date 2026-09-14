@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { MessageCircle, Plus, Search } from 'lucide-react';
+import { MessageCircle, Plus, Power, PowerOff, QrCode, Search, Trash2, Unplug } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,20 +138,39 @@ export function WhatsAppAccountsView() {
           <>
             <Button
               variant="ghost"
+              size="icon"
+              icon={<QrCode size={16} />}
               disabled={reconnect.isPending}
+              title={account.status === 'CONECTADO' ? 'Gerar novo QR code' : 'Reconectar'}
+              aria-label={
+                account.status === 'CONECTADO' ? `Gerar novo QR code para ${account.nome}` : `Reconectar ${account.nome}`
+              }
               onClick={() => reconnect.mutate(account.public_id, { onSuccess: openQrModal })}
-            >
-              {account.status === 'CONECTADO' ? 'Novo QR code' : 'Reconectar'}
-            </Button>
-            <Button variant="ghost" onClick={() => status.mutate({ id: account.public_id, ativo: !account.ativo })}>
-              {account.ativo ? 'Desativar' : 'Ativar'}
-            </Button>
-            <Button variant="ghost" onClick={() => setDisconnecting(account)}>
-              Desconectar
-            </Button>
-            <Button variant="ghost" onClick={() => setDeleting(account)}>
-              Excluir
-            </Button>
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={account.ativo ? <PowerOff size={16} /> : <Power size={16} />}
+              title={account.ativo ? 'Desativar' : 'Ativar'}
+              aria-label={`${account.ativo ? 'Desativar' : 'Ativar'} ${account.nome}`}
+              onClick={() => status.mutate({ id: account.public_id, ativo: !account.ativo })}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={<Unplug size={16} />}
+              title="Desconectar"
+              aria-label={`Desconectar ${account.nome}`}
+              onClick={() => setDisconnecting(account)}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              icon={<Trash2 size={16} />}
+              title="Excluir"
+              aria-label={`Excluir ${account.nome}`}
+              onClick={() => setDeleting(account)}
+            />
           </>
         )}
       />
