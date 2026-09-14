@@ -38,8 +38,11 @@ function useAccountAction<T, R = unknown>(fn: (input: T) => Promise<R>) {
 }
 
 export function useCreateWhatsApp() {
-  return useAccountAction<{ nome: string }, WhatsAppQrResult>((input) =>
-    apiRequest<WhatsAppQrResult>('/contas-whatsapp', { method: 'POST', body: JSON.stringify(input) }),
+  return useAccountAction<{ nome: string; fluxoPublicoId?: string }, WhatsAppQrResult>((input) =>
+    apiRequest<WhatsAppQrResult>('/contas-whatsapp', {
+      method: 'POST',
+      body: JSON.stringify({ nome: input.nome, ...(input.fluxoPublicoId ? { fluxoPublicoId: input.fluxoPublicoId } : {}) }),
+    }),
   );
 }
 
