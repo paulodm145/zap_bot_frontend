@@ -7,13 +7,45 @@ import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { FeedbackToast } from '@/components/ui/feedback-toast';
+import { ToggleSwitch } from '@/components/ui/toggle-switch';
 import type { FlowStatusFilter, FlowSummary } from '@/features/flows/types';
 import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
 import { useCreateFlow } from '@/hooks/flows/use-create-flow';
 import { useFlows } from '@/hooks/flows/use-flows';
+import { usePublishFlow } from '@/hooks/flows/use-publish-flow';
 import { useMe } from '@/hooks/tenant/use-me';
 import { isApiError } from '@/lib/api/api-error';
 import styles from './flows-list.module.css';
+
+/**
+ * Publica um fluxo direto da lista, sem abrir o editor. Não existe endpoint
+ * de "despublicar" — uma vez publicado sem alterações pendentes, o toggle só
+ * mostra o estado, travado, porque não há para onde voltar.
+ */
+function FlowPublishToggle({ flow, canManage }: { flow: FlowSummary; canManage: boolean }) {
+  const publish = usePublishFlow(flow.public_id);
+  const published = flow.ativo && !flow.possui_alteracoes_nao_publicadas;
+  return (
+    <>
+      <ToggleSwitch
+        checked={published}
+        disabled={!canManage || published || publish.isPending}
+        label={published ? `${flow.nome} já está publicado` : `Publicar ${flow.nome}`}
+        onCheckedChange={(next) => {
+          if (next && !published) publish.mutate();
+        }}
+      />
+      {publish.error && (
+        <FeedbackToast
+          error={publish.error}
+          title={`Não foi possível publicar “${flow.nome}”`}
+          key={isApiError(publish.error) ? `${publish.error.code}-${publish.error.correlationId ?? ''}` : 'inesperado'}
+        />
+      )}
+    </>
+  );
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
@@ -68,6 +100,13 @@ export function FlowsList() {
       },
       { id: 'version', header: 'Versão', accessor: 'versao', width: '10%', align: 'center' },
       {
+        id: 'publish',
+        header: 'Publicar',
+        width: '10%',
+        align: 'center',
+        render: (flow) => <FlowPublishToggle flow={flow} canManage={canManage} />,
+      },
+      {
         id: 'published',
         header: 'Publicação',
         width: '18%',
@@ -82,7 +121,7 @@ export function FlowsList() {
         render: (flow) => formatDate(flow.updated_at),
       },
     ],
-    [],
+    [canManage],
   );
   const errorMessage = flows.error
     ? isApiError(flows.error)
