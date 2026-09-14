@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { isApiError } from '@/lib/api/api-error';
 import styles from './feedback-toast.module.css';
 function detailMessage(details: unknown): string | null {
@@ -13,21 +13,43 @@ function detailMessage(details: unknown): string | null {
   if (typeof value.message === 'string') return value.path ? `${String(value.path)}: ${value.message}` : value.message;
   return detailMessage(value.erros ?? value.errors ?? Object.values(value));
 }
-export function FeedbackToast({ error, title = 'Não foi possível concluir' }: { error: unknown; title?: string }) {
+/**
+ * Alerta flutuante de erro (padrão) ou sucesso (`tone="success"`).
+ * `message` mostra um texto pronto (sucesso, ou um erro sem objeto de API);
+ * sem `message`, `error` é interpretado (mensagem da API + detalhes/correlação).
+ * Use uma `key` diferente por tentativa/mensagem para o alerta reaparecer:
+ * `visible` só reseta quando o componente remonta, não quando as props mudam.
+ */
+export function FeedbackToast({
+  error,
+  message,
+  tone = 'error',
+  title,
+}: {
+  error?: unknown;
+  message?: string;
+  tone?: 'error' | 'success';
+  title?: string;
+}) {
   const [visible, setVisible] = useState(true);
-  if (!error || !visible || typeof document === 'undefined') return null;
-  const message = isApiError(error) ? error.message : 'Ocorreu um erro inesperado. Tente novamente.';
-  const details = isApiError(error) ? detailMessage(error.details) : null;
+  if (!visible || typeof document === 'undefined') return null;
+  const resolvedMessage =
+    message ?? (error ? (isApiError(error) ? error.message : 'Ocorreu um erro inesperado. Tente novamente.') : null);
+  if (!resolvedMessage) return null;
+  const details = !message && isApiError(error) ? detailMessage(error.details) : null;
+  const success = tone === 'success';
   return createPortal(
-    <aside className={styles.toast} role="alert" aria-live="assertive">
-      <span className={styles.icon}>
-        <AlertCircle size={20} />
-      </span>
+    <aside
+      className={`${styles.toast} ${success ? styles.success : ''}`}
+      role={success ? 'status' : 'alert'}
+      aria-live={success ? 'polite' : 'assertive'}
+    >
+      <span className={styles.icon}>{success ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}</span>
       <div>
-        <strong>{title}</strong>
-        <p>{message}</p>
-        {details && details !== message && <small>{details}</small>}
-        {isApiError(error) && error.correlationId && <code>Referência: {error.correlationId}</code>}
+        <strong>{title ?? (success ? 'Feito' : 'Não foi possível concluir')}</strong>
+        <p>{resolvedMessage}</p>
+        {details && details !== resolvedMessage && <small>{details}</small>}
+        {!message && isApiError(error) && error.correlationId && <code>Referência: {error.correlationId}</code>}
       </div>
       <button type="button" onClick={() => setVisible(false)} aria-label="Fechar aviso">
         <X size={17} />
