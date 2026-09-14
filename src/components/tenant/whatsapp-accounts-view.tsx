@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
+import { useFlows } from '@/hooks/flows/use-flows';
 import {
   useCreateWhatsApp,
   useDisconnectWhatsApp,
@@ -29,9 +30,11 @@ export function WhatsAppAccountsView() {
   const [take, setTake] = useState(20);
   const [createOpen, setCreateOpen] = useState(false);
   const [nome, setNome] = useState('');
+  const [fluxoPublicoId, setFluxoPublicoId] = useState('');
   const [qrAccount, setQrAccount] = useState<{ id: string; qrCodeBase64?: string } | null>(null);
   const [disconnecting, setDisconnecting] = useState<WhatsAppAccount | undefined>(undefined);
   const list = useWhatsAppAccounts(useDebouncedValue(search), skip, take);
+  const publishedFlows = useFlows({ skip: 0, take: 100, status: 'PUBLICADO' });
   const create = useCreateWhatsApp();
   const reconnect = useReconnectWhatsApp();
   const disconnect = useDisconnectWhatsApp();
@@ -55,6 +58,7 @@ export function WhatsAppAccountsView() {
             <div>
               <strong>{account.nome}</strong>
               <small>{account.numero_exibicao ?? 'Ainda não pareado'}</small>
+              <small>{account.fluxo ? `Fluxo: ${account.fluxo.nome}` : 'Sem fluxo de entrada'}</small>
             </div>
           </div>
         ),
@@ -87,6 +91,7 @@ export function WhatsAppAccountsView() {
 
   function closeCreateModal() {
     setNome('');
+    setFluxoPublicoId('');
     setCreateOpen(false);
   }
 
@@ -155,7 +160,7 @@ export function WhatsAppAccountsView() {
           onSubmit={(event) => {
             event.preventDefault();
             create.mutate(
-              { nome },
+              { nome, ...(fluxoPublicoId ? { fluxoPublicoId } : {}) },
               {
                 onSuccess: (result) => {
                   closeCreateModal();
@@ -174,6 +179,18 @@ export function WhatsAppAccountsView() {
                 required
                 placeholder="Ex.: Número principal"
               />
+            </label>
+            <label className={styles.wide}>
+              <span>Fluxo de entrada (opcional)</span>
+              <select value={fluxoPublicoId} onChange={(event) => setFluxoPublicoId(event.target.value)}>
+                <option value="">Nenhum — mensagens aguardam atribuição manual</option>
+                {publishedFlows.data?.dados.map((flow) => (
+                  <option key={flow.public_id} value={flow.public_id}>
+                    {flow.nome}
+                  </option>
+                ))}
+              </select>
+              <small>É o fluxo publicado que responde automaticamente às mensagens recebidas neste número.</small>
             </label>
           </div>
         </CrudModal>

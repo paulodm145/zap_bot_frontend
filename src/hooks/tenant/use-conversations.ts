@@ -3,12 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api/api-client';
 import type { Conversation, Message, Page } from '@/features/tenant/types';
 const keys = ['tenant', 'conversations'] as const;
+// 'FILA' e 'MINHAS' mapeiam direto para o parâmetro `visao` da API. 'BOT' e
+// 'ENCERRADA' são views só do frontend: a API não tem `visao` para elas, então
+// viram `visao=TODAS` combinado com o filtro `status`.
+const statusPorView: Record<string, string | undefined> = { BOT: 'BOT', ENCERRADA: 'ENCERRADA' };
 // O Socket.IO já invalida estas chaves a cada evento. O polling permanece
 // apenas como rede de segurança enquanto o tempo real estiver desconectado.
 export function useConversations(view: string, realtime = false) {
   return useQuery({
     queryKey: [...keys, view],
-    queryFn: ({ signal }) => apiRequest<Page<Conversation>>(`/conversas?skip=0&take=100&visao=${view}`, { signal }),
+    queryFn: ({ signal }) => {
+      const status = statusPorView[view];
+      const query = new URLSearchParams({ skip: '0', take: '100', visao: status ? 'TODAS' : view });
+      if (status) query.set('status', status);
+      return apiRequest<Page<Conversation>>(`/conversas?${query}`, { signal });
+    },
     refetchInterval: realtime ? false : 15000,
   });
 }
@@ -45,6 +54,17 @@ export function useCloseConversation() {
       apiRequest<Conversation>(`/conversas/${i.id}/encerrar`, {
         method: 'POST',
         body: JSON.stringify({ motivo: i.reason || undefined, devolverAoBot: false }),
+      }),
+    onSuccess: (_, i) => invalidate(c, i.id),
+  });
+}
+export function useReassignConversation() {
+  const c = useQueryClient();
+  return useMutation({
+    mutationFn: (i: { id: string; setorId: string; reason: string }) =>
+      apiRequest<Conversation>(`/conversas/${i.id}/reatribuir`, {
+        method: 'POST',
+        body: JSON.stringify({ setorId: i.setorId, motivo: i.reason }),
       }),
     onSuccess: (_, i) => invalidate(c, i.id),
   });

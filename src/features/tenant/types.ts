@@ -46,6 +46,7 @@ export type WhatsAppAccount = {
   ultimo_erro_codigo?: string | null;
   ultimo_erro_mensagem?: string | null;
   ativo: boolean;
+  fluxo: { public_id: string; nome: string } | null;
 };
 export type Message = {
   public_id: string;

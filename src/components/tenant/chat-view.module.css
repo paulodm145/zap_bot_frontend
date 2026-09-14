@@ -64,6 +64,11 @@
 .header strong {
   display: block;
 }
+.header .actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+}
 .messages {
   padding: 18px;
   overflow: auto;
