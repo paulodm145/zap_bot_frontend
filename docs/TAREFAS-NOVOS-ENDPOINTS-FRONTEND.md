@@ -136,3 +136,18 @@
   legível para as 5 ações de sistema e aviso genérico para conteúdo sem
   texto (ex.: mídia); notas de sistema ganham estilo visual próprio
   (centralizado, discreto); lint, tipos, 83 testes e build aprovados.
+- [x] **NE-12 — Corrige estouro de colunas na tabela de contas WhatsApp**
+  Branch: `fix/estouro-colunas-tabela`
+  Relatado pelo usuário: a coluna de ações estava quebrando a formatação da
+  tabela. Causa: `DataTable` fixava `.actionsColumn` em `96px`; a tela de
+  contas WhatsApp tinha 4 botões de texto (Reconectar/Novo QR code,
+  Ativar/Desativar, Desconectar, Excluir) — bem mais largos que a coluna, e
+  o conteúdo vazava da célula em `table-layout: fixed`.
+  Aceite: as 4 ações de contas WhatsApp viram botões de ícone (mesmo padrão
+  já usado por usuários/setores/tenants); `.actionsColumn` passa a encolher
+  ao conteúdo (`width: 1%` + `white-space: nowrap`) em vez de largura fixa
+  em px, então não volta a quebrar com mais ou menos botões; `.entity`
+  (usado por WhatsApp/usuários/setores) ganha `min-width: 0` e
+  `text-overflow: ellipsis`, mesmo padrão que `.flowName` já tinha, para um
+  nome/fluxo longo não forçar a célula a crescer além da coluna; lint,
+  tipos, 83 testes e build aprovados.

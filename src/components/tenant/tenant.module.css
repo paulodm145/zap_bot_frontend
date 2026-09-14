@@ -138,8 +138,13 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  /* Numa célula de table-layout: fixed, um item flex sem min-width:0 ignora a
+     largura da coluna e cresce pelo conteúdo — um nome/fluxo/número longo
+     estoura a célula e desalinha a tabela inteira. */
+  min-width: 0;
 }
 .entity > span {
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   display: grid;
@@ -151,6 +156,13 @@
 .entity > div {
   display: grid;
   gap: 3px;
+  min-width: 0;
+}
+.entity strong,
+.entity small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .entity strong {
   font-size: 11px;
