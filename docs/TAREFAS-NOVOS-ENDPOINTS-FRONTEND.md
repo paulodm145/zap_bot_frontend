@@ -81,3 +81,40 @@
   exata é preservada sem recálculo; teste de integração no backend confirma
   o round-trip via `POST`→`GET /fluxos/:id`; lint, tipos, testes e build
   aprovados nos dois repositórios.
+- [x] **NE-09 — Aviso de variável órfã na regra de condição**
+  Branch: `feat/feedback-editor-fluxos`
+  Relatado pelo usuário: publicar um fluxo falhava com "A variável X não é
+  capturada antes desta condição", sem explicação visível. Avaliando o fluxo
+  salvo (`Novo fluxo`, tenant de avaliação), a causa foi confirmada: as
+  regras referenciavam a variável `opcao`, mas o bloco de captura anterior
+  guardava a resposta em `resposta` — não há como o `<select>` de variável
+  do construtor de regras mostrar isso: um valor salvo que não está mais na
+  lista de variáveis disponíveis fica com o `<select>` em branco, sem pista
+  do que está errado.
+  Aceite: quando `rule.variavel` não está entre as variáveis disponíveis, o
+  construtor mantém o valor visível numa opção marcada "(não existe mais)" e
+  mostra um aviso inline explicando que a variável foi renomeada ou removida
+  e pedindo para escolher outra — mesmo padrão visual do aviso de aspas já
+  existente. Corrige a causa da confusão; não altera a regra de validação
+  em si (a variável realmente precisa ser recapturada antes da condição).
+- [x] **NE-10 — Publicar direto do grid + confirmação de salvar/publicar**
+  Branch: `feat/feedback-editor-fluxos` (mesma do NE-09)
+  Dois pedidos do usuário:
+  1. Publicar um fluxo sem precisar abrir o editor — a lista de fluxos
+     (`FlowsList`) ganhou uma coluna "Publicar" com `ToggleSwitch` por linha.
+     Não existe endpoint de despublicar, então o toggle é direcional: fica
+     travado "ligado" quando o fluxo já está publicado sem alterações
+     pendentes, e liga (chamando `POST /fluxos/:id/publicar`) quando há
+     rascunho ou alterações pendentes. Erros de publicação (por exemplo, a
+     mesma variável órfã do NE-09) aparecem num toast por linha, com o nome
+     do fluxo no título.
+  2. Salvar/publicar no editor não davam nenhum aviso destacado de sucesso
+     ou falha — só um texto pequeno no cabeçalho, fácil de não notar.
+     Adicionado `FeedbackToast` (generalizado para aceitar `tone="success"`
+     e mensagem livre além do uso original só de erro de API) para: sucesso
+     ao salvar, falha ao salvar, bloqueio de publicação pela validação local
+     (destaca "corrija o bloco destacado"), falha ao publicar e sucesso ao
+     publicar.
+  Aceite: lint, tipos, 77 testes e build aprovados nos dois pontos; nenhum
+  teste de componente foi adicionado (sem infraestrutura de Testing
+  Library/jsdom neste repositório, mesma limitação já registrada no NE-06).
