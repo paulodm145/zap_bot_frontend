@@ -79,8 +79,14 @@ describe('flow graph contract conversion', () => {
       schemaVersao: 1,
       noInicial: 'inicio',
       nos: [
-        { id: 'inicio', tipo: 'mensagem', dados: { texto: 'Olá' }, proximo: 'setor' },
-        { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' } },
+        {
+          id: 'inicio',
+          tipo: 'mensagem',
+          dados: { texto: 'Olá' },
+          proximo: 'setor',
+          posicao: { x: 0, y: 0 },
+        },
+        { id: 'setor', tipo: 'direcionar_setor', dados: { setorId: 'setor-1' }, posicao: { x: 0, y: 100 } },
       ],
     });
   });
@@ -95,7 +101,12 @@ describe('flow graph contract conversion', () => {
     };
     const graph = definitionToGraph(definition);
     expect(graph.nodes[0].data.sectorId).toBe('11111111-1111-4111-8111-111111111111');
-    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual(definition);
+    // A definição de entrada não tinha `posicao`: definitionToGraph gera uma
+    // posição inicial em grade, que passa a ser salva no primeiro round-trip.
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual({
+      ...definition,
+      nos: [{ ...definition.nos[0], posicao: { x: 120, y: 60 } }],
+    });
   });
 
   it('round-trips the supported response capture node', () => {
@@ -109,6 +120,7 @@ describe('flow graph contract conversion', () => {
       id: 'captura',
       tipo: 'captura_resposta',
       dados: { variavel: 'opcao', mensagem: 'Qual opção?' },
+      posicao: { x: 120, y: 60 },
     });
   });
 
@@ -150,6 +162,7 @@ describe('flow graph contract conversion', () => {
         ],
         padrao: 'b',
       },
+      posicao: { x: 0, y: 0 },
     });
   });
 
@@ -180,6 +193,33 @@ describe('flow graph contract conversion', () => {
       ],
     };
     const graph = definitionToGraph(definition);
+    // Mesma observação do teste de setor: sem `posicao` na entrada, a grade
+    // inicial é o que sai no primeiro round-trip.
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual({
+      ...definition,
+      nos: [
+        { ...definition.nos[0], posicao: { x: 120, y: 60 } },
+        { ...definition.nos[1], posicao: { x: 400, y: 60 } },
+        { ...definition.nos[2], posicao: { x: 680, y: 60 } },
+      ],
+    });
+  });
+
+  // Antes desta correção, a posição salva era descartada: definitionToGraph
+  // sempre recalculava uma grade, e o usuário via os blocos se reorganizarem
+  // sozinhos a cada vez que reabria o fluxo.
+  it('preserves the exact position saved for each block, without recomputing the grid', () => {
+    const definition = {
+      schemaVersao: 1 as const,
+      noInicial: 'inicio',
+      nos: [
+        { id: 'inicio', tipo: 'mensagem', dados: { texto: 'A' }, posicao: { x: 733, y: -42 } },
+        { id: 'fim', tipo: 'mensagem', dados: { texto: 'B' }, posicao: { x: -10, y: 900 } },
+      ],
+    };
+    const graph = definitionToGraph(definition);
+    expect(graph.nodes[0].position).toEqual({ x: 733, y: -42 });
+    expect(graph.nodes[1].position).toEqual({ x: -10, y: 900 });
     expect(graphToDefinition(graph.nodes, graph.edges)).toEqual(definition);
   });
 

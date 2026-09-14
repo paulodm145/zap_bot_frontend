@@ -7,6 +7,14 @@ export type FlowGraph = { nodes: Node<FlowNodeData>[]; edges: Edge[] };
 
 const edgeStyle = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
 
+/** Valida `raw.posicao` sem confiar no formato vindo do backend (`unknown`). */
+function posicaoSalva(raw: unknown): { x: number; y: number } | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined;
+  const { x, y } = raw as Record<string, unknown>;
+  if (typeof x !== 'number' || typeof y !== 'number') return undefined;
+  return { x, y };
+}
+
 function kindFromType(type: unknown) {
   if (type === 'mensagem') return 'message';
   if (type === 'captura_resposta') return 'capture';
@@ -32,7 +40,13 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
     return {
       id,
       type: 'flowNode',
-      position: { x: 120 + (index % 3) * 280, y: 60 + Math.floor(index / 3) * 150 },
+      // Fluxos salvos por esta versão do editor trazem `posicao`; a grade só
+      // serve de layout inicial para fluxos antigos ou blocos novos ainda sem
+      // posição salva.
+      position: posicaoSalva(raw.posicao) ?? {
+        x: 120 + (index % 3) * 280,
+        y: 60 + Math.floor(index / 3) * 150,
+      },
       data: {
         label: String(type),
         detail: id,
@@ -142,6 +156,7 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
     noInicial: firstNode,
     nos: nodes.map((node) => {
       const outgoing = edges.filter((edge) => edge.source === node.id);
+      const posicao = { x: node.position.x, y: node.position.y };
       if (node.data.kind === 'condition') {
         const regras = (node.data.regras ?? []).filter((rule) => rule.variavel !== '' && rule.destinoId !== '');
         return {
@@ -151,10 +166,16 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
             regras: regras.map((rule) => ({ se: serializeRule(rule), entao: rule.destinoId })),
             padrao: node.data.padraoId ?? '',
           },
+          posicao,
         };
       }
       if (node.data.kind === 'team')
-        return { id: node.id, tipo: 'direcionar_setor', dados: { setorId: node.data.sectorId ?? '' } };
+        return {
+          id: node.id,
+          tipo: 'direcionar_setor',
+          dados: { setorId: node.data.sectorId ?? '' },
+          posicao,
+        };
       const tipo = node.data.kind === 'capture' ? 'captura_resposta' : 'mensagem';
       return {
         id: node.id,
@@ -165,6 +186,7 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
             : // `mensagem` é opcional, mas quando presente exige ao menos 1 caractere.
               { variavel: node.data.variable ?? '', ...(node.data.content ? { mensagem: node.data.content } : {}) },
         ...(outgoing[0] ? { proximo: outgoing[0].target } : {}),
+        posicao,
       };
     }),
   };
