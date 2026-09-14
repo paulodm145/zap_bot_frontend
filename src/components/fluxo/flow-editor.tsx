@@ -39,6 +39,7 @@ import {
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FeedbackToast } from '@/components/ui/feedback-toast';
 import { Logo } from '@/components/ui/logo';
 import styles from './flow-editor.module.css';
 import {
@@ -78,6 +79,10 @@ type Tool = {
 };
 
 const iconMap = { message: MessageSquareText, capture: TextCursorInput, condition: GitBranch, team: Users };
+/** Chave estável por erro, para o toast remontar quando um erro diferente chega. */
+function errorToastKey(error: unknown): string {
+  return isApiError(error) ? `${error.code}-${error.correlationId ?? error.message}` : 'inesperado';
+}
 const edgeDefaults = { markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#63aa94', strokeWidth: 2 } };
 
 function FlowNode({ id, data, selected }: NodeProps<Node<FlowData>>) {
@@ -233,6 +238,13 @@ function FlowEditorContent({
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges);
   const [selectedId, setSelectedId] = useState<string | null>(initialNodes[0]?.id ?? null);
   const [saved, setSaved] = useState(false);
+  // Contadores só para remontar o toast de sucesso a cada novo salvar/publicar:
+  // `visible` do FeedbackToast não reseta sozinho quando a mensagem se repete.
+  const [saveOkCount, setSaveOkCount] = useState(0);
+  const [publishOkCount, setPublishOkCount] = useState(0);
+  // Preenchido quando a validação local barra a publicação, antes de chamar a
+  // API — nesse caso publishFlow.error nunca é setado, então o aviso é à parte.
+  const [publishBlockedMessage, setPublishBlockedMessage] = useState<string | null>(null);
   const saveFlow = useSaveFlow(flowId);
   const createFlow = useCreateFlow();
   const publishFlow = usePublishFlow(flowId);
@@ -287,9 +299,10 @@ function FlowEditorContent({
       if (flowId) await saveFlow.mutateAsync({ name: flowName, definition });
       else await createFlow.mutateAsync({ name: flowName, definition });
       setSaved(true);
+      setSaveOkCount((count) => count + 1);
       window.setTimeout(() => setSaved(false), 1800);
     } catch {
-      /* erro exibido no cabeçalho */
+      /* erro exibido no cabeçalho e no toast (saveFlow.error/createFlow.error) */
     }
   }, [canManage, createFlow, displayEdges, flowId, flowName, markInvalidBlocks, nodes, saveFlow]);
   const connect = useCallback(
@@ -394,9 +407,15 @@ function FlowEditorContent({
   }
 
   async function publish() {
-    if (!canManage || !markInvalidBlocks()) return;
+    if (!canManage) return;
+    if (!markInvalidBlocks()) {
+      setPublishBlockedMessage('Corrija o bloco destacado antes de publicar.');
+      return;
+    }
+    setPublishBlockedMessage(null);
     try {
       await publishFlow.mutateAsync();
+      setPublishOkCount((count) => count + 1);
     } catch (error) {
       if (isApiError(error) && error.status === 422) {
         const details = error.details as
@@ -433,8 +452,32 @@ function FlowEditorContent({
     }
   }
 
+  const saveError = saveFlow.error ?? createFlow.error;
   return (
     <main className={styles.editor}>
+      {saveError && (
+        <FeedbackToast error={saveError} title="Não foi possível salvar" key={`save-erro-${errorToastKey(saveError)}`} />
+      )}
+      {saved && (
+        <FeedbackToast tone="success" message="Fluxo salvo." key={`save-ok-${String(saveOkCount)}`} />
+      )}
+      {publishBlockedMessage && (
+        <FeedbackToast
+          message={publishBlockedMessage}
+          title="Não foi possível publicar"
+          key={`publish-bloqueado-${publishBlockedMessage}`}
+        />
+      )}
+      {publishFlow.error && !publishBlockedMessage && (
+        <FeedbackToast
+          error={publishFlow.error}
+          title="Não foi possível publicar"
+          key={`publish-erro-${errorToastKey(publishFlow.error)}`}
+        />
+      )}
+      {publishFlow.isSuccess && (
+        <FeedbackToast tone="success" message="Fluxo publicado." key={`publish-ok-${String(publishOkCount)}`} />
+      )}
       <header className={styles.header}>
         <div className={styles.brand}>
           <Logo compact />
