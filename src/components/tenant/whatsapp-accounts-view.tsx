@@ -11,6 +11,7 @@ import { useDebouncedValue } from '@/hooks/common/use-debounced-value';
 import { useFlows } from '@/hooks/flows/use-flows';
 import {
   useCreateWhatsApp,
+  useDeleteWhatsApp,
   useDisconnectWhatsApp,
   useReconnectWhatsApp,
   useWhatsAppAccount,
@@ -33,11 +34,13 @@ export function WhatsAppAccountsView() {
   const [fluxoPublicoId, setFluxoPublicoId] = useState('');
   const [qrAccount, setQrAccount] = useState<{ id: string; qrCodeBase64?: string } | null>(null);
   const [disconnecting, setDisconnecting] = useState<WhatsAppAccount | undefined>(undefined);
+  const [deleting, setDeleting] = useState<WhatsAppAccount | undefined>(undefined);
   const list = useWhatsAppAccounts(useDebouncedValue(search), skip, take);
   const publishedFlows = useFlows({ skip: 0, take: 100, status: 'PUBLICADO' });
   const create = useCreateWhatsApp();
   const reconnect = useReconnectWhatsApp();
   const disconnect = useDisconnectWhatsApp();
+  const deleteAccount = useDeleteWhatsApp();
   const status = useWhatsAppStatus();
 
   function openQrModal(result: WhatsAppQrResult) {
@@ -146,6 +149,9 @@ export function WhatsAppAccountsView() {
             <Button variant="ghost" onClick={() => setDisconnecting(account)}>
               Desconectar
             </Button>
+            <Button variant="ghost" onClick={() => setDeleting(account)}>
+              Excluir
+            </Button>
           </>
         )}
       />
@@ -206,10 +212,24 @@ export function WhatsAppAccountsView() {
         <ConfirmDialog
           title={`Desconectar ${disconnecting.nome}?`}
           description="A sessão pareada é encerrada. A conta continua cadastrada e pode ser reconectada depois com um novo QR code."
+          confirmLabel="Desconectar"
           pending={disconnect.isPending}
           error={disconnect.error ? (isApiError(disconnect.error) ? disconnect.error.message : 'Falha ao desconectar.') : null}
           onCancel={() => setDisconnecting(undefined)}
           onConfirm={() => disconnect.mutate(disconnecting.public_id, { onSuccess: () => setDisconnecting(undefined) })}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          title={`Excluir ${deleting.nome}?`}
+          description="A conta e o número pareado são removidos definitivamente — não é possível desfazer. Para usar este número de novo, será preciso cadastrá-lo e parear do zero. Conversas e mensagens já trocadas continuam no histórico."
+          confirmLabel="Excluir definitivamente"
+          pending={deleteAccount.isPending}
+          error={
+            deleteAccount.error ? (isApiError(deleteAccount.error) ? deleteAccount.error.message : 'Falha ao excluir.') : null
+          }
+          onCancel={() => setDeleting(undefined)}
+          onConfirm={() => deleteAccount.mutate(deleting.public_id, { onSuccess: () => setDeleting(undefined) })}
         />
       )}
     </AppShell>

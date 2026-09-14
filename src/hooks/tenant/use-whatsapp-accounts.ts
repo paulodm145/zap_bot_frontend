@@ -58,6 +58,13 @@ export function useDisconnectWhatsApp() {
   );
 }
 
+/** Exclusão definitiva (soft delete no backend) — sem desfazer pela tela. */
+export function useDeleteWhatsApp() {
+  return useAccountAction<string, void>((id) =>
+    apiRequest<void>(`/contas-whatsapp/${id}`, { method: 'DELETE' }),
+  );
+}
+
 export function useWhatsAppStatus() {
   return useAccountAction((input: { id: string; ativo: boolean }) =>
     apiRequest(`/contas-whatsapp/${input.id}/status`, {
