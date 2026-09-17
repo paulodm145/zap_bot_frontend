@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,12 +26,15 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { useSession } from '@/hooks/auth/use-session';
 import { sessionStore } from '@/lib/auth/session-store';
 import { useMe } from '@/hooks/tenant/use-me';
+import { useSocket } from '@/lib/realtime/socket-provider';
 import type { Role } from '@/features/tenant/types';
+
+const ATENDIMENTO_HREF = '/atendimento';
 
 const nav: Array<{ href: string; label: string; icon: typeof BarChart3; roles?: Role[] }> = [
   { href: '/dashboard', label: 'Visão geral', icon: BarChart3 },
   { href: '/fluxos', label: 'Meus fluxos', icon: Workflow },
-  { href: '/atendimento', label: 'Atendimento', icon: MessagesSquare },
+  { href: ATENDIMENTO_HREF, label: 'Atendimento', icon: MessagesSquare },
   { href: '/setores', label: 'Setores', icon: Building2 },
   { href: '/usuarios', label: 'Usuários', icon: Users, roles: ['ADMIN_TENANT', 'GESTOR'] },
   { href: '/empresa', label: 'Dados da empresa', icon: Building2 },
@@ -56,6 +59,11 @@ export function AppShell({
   const me = useMe();
   const [open, setOpen] = useState(false);
   const logout = useLogout();
+  const { hasNewConversationActivity, markConversationsSeen } = useSocket();
+
+  useEffect(() => {
+    if (pathname.startsWith(ATENDIMENTO_HREF)) markConversationsSeen();
+  }, [markConversationsSeen, pathname]);
   return (
     <AuthGuard>
       <div className={styles.shell}>
@@ -81,6 +89,7 @@ export function AppShell({
               .map((item) => {
                 const Icon = item.icon;
                 const active = pathname.startsWith(item.href);
+                const showAlert = item.href === ATENDIMENTO_HREF && hasNewConversationActivity && !active;
                 return (
                   <Link
                     key={item.label}
@@ -90,6 +99,7 @@ export function AppShell({
                   >
                     <Icon size={19} />
                     <span>{item.label}</span>
+                    {showAlert && <b aria-label="Mensagens novas">novo</b>}
                   </Link>
                 );
               })}
