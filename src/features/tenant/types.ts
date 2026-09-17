@@ -56,5 +56,7 @@ export type Message = {
   /** Formato varia por `tipo`/`autor`: `{ texto }`, `{ acao, motivo }` etc. — nunca renderize direto. */
   conteudo?: unknown;
   status_entrega?: string;
+  /** Quando a mensagem de fato ocorreu — é este campo que deve aparecer na bolha do chat, não `created_at`. */
+  ocorreu_at: string;
   created_at: string;
 };

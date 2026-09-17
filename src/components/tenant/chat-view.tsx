@@ -15,7 +15,7 @@ import {
 } from '@/hooks/tenant/use-conversations';
 import { useMe } from '@/hooks/tenant/use-me';
 import { useSectors } from '@/hooks/tenant/use-sectors';
-import { messageBodyText } from '@/features/tenant/messages';
+import { messageBodyText, messageTimestampLabel } from '@/features/tenant/messages';
 import { isApiError } from '@/lib/api/api-error';
 import { CrudModal } from './crud-modal';
 import tenantStyles from './tenant.module.css';
@@ -152,7 +152,7 @@ export function ChatView() {
                   key={message.public_id}
                 >
                   {messageBodyText(message)}
-                  <small>{message.status_entrega ?? message.created_at}</small>
+                  <small>{messageTimestampLabel(message)}</small>
                 </div>
               ))}
             </div>
@@ -187,7 +187,11 @@ export function ChatView() {
           submitLabel="Reatribuir"
           pending={reassign.isPending}
           error={
-            reassign.error ? (isApiError(reassign.error) ? reassign.error.message : 'Não foi possível reatribuir.') : null
+            reassign.error
+              ? isApiError(reassign.error)
+                ? reassign.error.message
+                : 'Não foi possível reatribuir.'
+              : null
           }
           onClose={() => setReassigning(false)}
           onSubmit={(event) => {
