@@ -27,7 +27,28 @@ export function messageBodyText(message: Message): string {
     if (typeof texto === 'string' && texto) return texto;
   }
   if (typeof conteudo === 'string' && conteudo) return conteudo;
-  return message.tipo === 'IMAGEM' || message.tipo === 'AUDIO' || message.tipo === 'DOCUMENTO' || message.tipo === 'VIDEO'
+  return message.tipo === 'IMAGEM' ||
+    message.tipo === 'AUDIO' ||
+    message.tipo === 'DOCUMENTO' ||
+    message.tipo === 'VIDEO'
     ? `[${message.tipo.toLowerCase()}]`
     : 'Mensagem sem conteúdo de texto.';
+}
+
+/**
+ * Rótulo de data/hora da bolha do chat, a partir de `ocorreu_at` (quando a
+ * mensagem de fato aconteceu, não `created_at`, que é quando a linha foi
+ * persistida — os dois podem divergir em mensagens recebidas com atraso no
+ * processamento do webhook). Mostra só a hora quando é do mesmo dia que
+ * `now`, e data curta + hora quando não é, para não obrigar o atendente a
+ * inferir o dia numa conversa que atravessou a virada.
+ */
+export function messageTimestampLabel(message: Message, now: Date = new Date()): string {
+  const date = new Date(message.ocorreu_at);
+  if (Number.isNaN(date.getTime())) return '';
+  const sameDay = date.toDateString() === now.toDateString();
+  const options: Intl.DateTimeFormatOptions = sameDay
+    ? { timeStyle: 'short' }
+    : { dateStyle: 'short', timeStyle: 'short' };
+  return new Intl.DateTimeFormat('pt-BR', options).format(date);
 }
