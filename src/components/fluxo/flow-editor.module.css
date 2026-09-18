@@ -130,6 +130,10 @@
   color: #0f7861;
   background: #e1f7f0;
 }
+.capture {
+  color: #2f6f8f;
+  background: #e3f2f7;
+}
 .condition {
   color: #a7660b;
   background: #fff1d8;
@@ -138,7 +142,8 @@
   color: #7450b8;
   background: #f0eafa;
 }
-.http {
+.http,
+.integration {
   color: #3e72a5;
   background: #e6f0fa;
 }
