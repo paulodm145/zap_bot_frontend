@@ -36,6 +36,16 @@ export type FlowRule = {
   destinoId: string;
 };
 
+export type FlowHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export type FlowResponseMapping = {
+  /** Chave estável para render e reordenação; não é enviada ao backend. */
+  id: string;
+  variavel: string;
+  /** Caminho no formato `$.a.b[0]`, extraído da resposta da chamada. */
+  caminho: string;
+};
+
 export type FlowNodeData = {
   label: string;
   detail: string;
@@ -49,5 +59,14 @@ export type FlowNodeData = {
   regras?: FlowRule[];
   /** Somente em blocos de condição: destino quando nenhuma regra for verdadeira. */
   padraoId?: string;
+  /** Somente em blocos de integração HTTP. */
+  credentialId?: string;
+  method?: FlowHttpMethod;
+  url?: string;
+  requestBody?: string;
+  mappings?: FlowResponseMapping[];
+  /** Somente em blocos de integração HTTP: destino em cada saída nomeada. */
+  successId?: string;
+  failureId?: string;
   validationError?: string;
 };

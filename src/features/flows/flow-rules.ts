@@ -101,9 +101,13 @@ export function variaveisDisponiveis(nodes: Node<FlowNodeData>[], edges: Edge[],
       fila.push(pai);
     }
   }
-  const nomes = nodes
-    .filter((node) => ancestrais.has(node.id) && node.data.kind === 'capture')
-    .map((node) => node.data.variable ?? '')
-    .filter((nome) => nome !== '');
+  const ancestraisAlcancados = nodes.filter((node) => ancestrais.has(node.id));
+  const deCaptura = ancestraisAlcancados
+    .filter((node) => node.data.kind === 'capture')
+    .map((node) => node.data.variable ?? '');
+  const deIntegracao = ancestraisAlcancados
+    .filter((node) => node.data.kind === 'integration')
+    .flatMap((node) => (node.data.mappings ?? []).map((mapping) => mapping.variavel));
+  const nomes = [...deCaptura, ...deIntegracao].filter((nome) => nome !== '');
   return [...new Set(nomes)];
 }
