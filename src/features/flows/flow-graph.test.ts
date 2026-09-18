@@ -370,6 +370,272 @@ describe('flow graph validation', () => {
     ];
     expect(validateGraph(nodes, [{ id: 'e1', source: 'captura', target: 'decidir' }])).toEqual([]);
   });
+
+  it('loads an integration node with its two named outputs', () => {
+    const graph = definitionToGraph({
+      schemaVersao: 1,
+      noInicial: 'consultar',
+      nos: [
+        {
+          id: 'consultar',
+          tipo: 'integracao_http',
+          dados: {
+            credencialId: 'cred-1',
+            metodo: 'GET',
+            url: 'https://api.exemplo.com/pedidos/{{numero}}',
+            mapeamentoResposta: { 'pedido.status': '$.dados.status' },
+          },
+          sucesso: 'achou',
+          falha: 'nao_achou',
+        },
+        { id: 'achou', tipo: 'mensagem', dados: { texto: 'Encontrei' } },
+        { id: 'nao_achou', tipo: 'mensagem', dados: { texto: 'Não encontrei' } },
+      ],
+    });
+    expect(graph.nodes[0].data).toMatchObject({
+      kind: 'integration',
+      credentialId: 'cred-1',
+      method: 'GET',
+      url: 'https://api.exemplo.com/pedidos/{{numero}}',
+      mappings: [{ id: 'mapa_1', variavel: 'pedido.status', caminho: '$.dados.status' }],
+    });
+    expect(graph.edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: 'consultar', sourceHandle: 'sucesso', target: 'achou' }),
+        expect.objectContaining({ source: 'consultar', sourceHandle: 'falha', target: 'nao_achou' }),
+      ]),
+    );
+  });
+
+  it('falls back to the GET method when the backend value is not recognized', () => {
+    const graph = definitionToGraph({
+      schemaVersao: 1,
+      noInicial: 'consultar',
+      nos: [
+        {
+          id: 'consultar',
+          tipo: 'integracao_http',
+          dados: { credencialId: 'cred-1', metodo: 'TRACE', url: 'https://api.exemplo.com', mapeamentoResposta: {} },
+        },
+      ],
+    });
+    expect(graph.nodes[0].data.method).toBe('GET');
+  });
+
+  it('serializes an integration node from its two named edges', () => {
+    const nodes: FlowGraph['nodes'] = [
+      node('consultar', {
+        kind: 'integration',
+        icon: 'integration',
+        credentialId: 'cred-1',
+        method: 'POST',
+        url: 'https://api.exemplo.com/pedidos',
+        requestBody: '{"id": "{{numero}}"}',
+        mappings: [{ id: 'mapa_1', variavel: 'pedido.status', caminho: '$.status' }],
+      }),
+      message('ok', 'Ok'),
+      message('erro', 'Erro'),
+    ];
+    const edges = [
+      { id: 'e1', source: 'consultar', sourceHandle: 'sucesso', target: 'ok' },
+      { id: 'e2', source: 'consultar', sourceHandle: 'falha', target: 'erro' },
+    ];
+    expect(graphToDefinition(nodes, edges).nos[0]).toEqual({
+      id: 'consultar',
+      tipo: 'integracao_http',
+      dados: {
+        credencialId: 'cred-1',
+        metodo: 'POST',
+        url: 'https://api.exemplo.com/pedidos',
+        corpo: '{"id": "{{numero}}"}',
+        mapeamentoResposta: { 'pedido.status': '$.status' },
+      },
+      sucesso: 'ok',
+      falha: 'erro',
+      posicao: { x: 0, y: 0 },
+    });
+  });
+
+  it('omits an incomplete response mapping when serializing', () => {
+    const nodes: FlowGraph['nodes'] = [
+      node('consultar', {
+        kind: 'integration',
+        credentialId: 'cred-1',
+        method: 'GET',
+        url: 'https://api.exemplo.com',
+        mappings: [
+          { id: 'mapa_1', variavel: 'status', caminho: '$.status' },
+          { id: 'mapa_2', variavel: '', caminho: '' },
+        ],
+      }),
+    ];
+    expect(graphToDefinition(nodes, []).nos[0]).toMatchObject({
+      dados: { mapeamentoResposta: { status: '$.status' } },
+    });
+  });
+
+  it('round-trips an integration node without a request body or mappings', () => {
+    const definition = {
+      schemaVersao: 1 as const,
+      noInicial: 'consultar',
+      nos: [
+        {
+          id: 'consultar',
+          tipo: 'integracao_http',
+          dados: { credencialId: 'cred-1', metodo: 'DELETE', url: 'https://api.exemplo.com/1', mapeamentoResposta: {} },
+        },
+      ],
+    };
+    const graph = definitionToGraph(definition);
+    expect(graphToDefinition(graph.nodes, graph.edges)).toEqual({
+      ...definition,
+      nos: [{ ...definition.nos[0], posicao: { x: 120, y: 60 } }],
+    });
+  });
+});
+
+// Definição real, publicada por este projeto contra a API do backend, do
+// fluxo de demonstração "Consulta de CEP (demo integração)". Antes deste
+// bloco, kindFromType não reconhecia `integracao_http` e caía no padrão
+// `message` — abrir e salvar este fluxo pelo editor apagaria a integração,
+// substituindo-a por um bloco de mensagem vazio.
+describe('round-trips the real "Consulta de CEP" flow definition unchanged', () => {
+  const definicaoReal = {
+    schemaVersao: 1 as const,
+    noInicial: 'pedir_cep',
+    nos: [
+      {
+        id: 'pedir_cep',
+        tipo: 'mensagem',
+        dados: { texto: 'Digite seu CEP (só números)' },
+        posicao: { x: 300, y: 0 },
+        proximo: 'capturar',
+      },
+      {
+        id: 'capturar',
+        tipo: 'captura_resposta',
+        dados: { variavel: 'cep' },
+        posicao: { x: 300, y: 120 },
+        proximo: 'consultar',
+      },
+      {
+        id: 'consultar',
+        tipo: 'integracao_http',
+        dados: {
+          url: 'https://viacep.com.br/ws/{{cep}}/json/',
+          metodo: 'GET',
+          credencialId: 'c2c71248-d38b-40ab-9c48-1757b41eecbd',
+          mapeamentoResposta: { 'endereco.uf': '$.uf', 'endereco.cidade': '$.localidade' },
+        },
+        falha: 'nao_achou',
+        posicao: { x: 300, y: 240 },
+        sucesso: 'achou',
+      },
+      {
+        id: 'achou',
+        tipo: 'mensagem',
+        dados: { texto: 'Encontrei: {{endereco.cidade}}/{{endereco.uf}}' },
+        posicao: { x: 150, y: 380 },
+      },
+      {
+        id: 'nao_achou',
+        tipo: 'mensagem',
+        dados: { texto: 'Não consegui consultar esse CEP.' },
+        posicao: { x: 450, y: 380 },
+      },
+    ],
+  };
+
+  it('loads the integration node with its real credential, URL and mappings', () => {
+    const graph = definitionToGraph(definicaoReal);
+    const consultar = graph.nodes.find((node) => node.id === 'consultar');
+    expect(consultar?.data).toMatchObject({
+      kind: 'integration',
+      credentialId: 'c2c71248-d38b-40ab-9c48-1757b41eecbd',
+      method: 'GET',
+      url: 'https://viacep.com.br/ws/{{cep}}/json/',
+    });
+    expect(consultar?.data.mappings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ variavel: 'endereco.uf', caminho: '$.uf' }),
+        expect.objectContaining({ variavel: 'endereco.cidade', caminho: '$.localidade' }),
+      ]),
+    );
+  });
+
+  it('saves back to the exact same definition, byte for byte on the meaningful fields', () => {
+    const graph = definitionToGraph(definicaoReal);
+    const saved = graphToDefinition(graph.nodes, graph.edges);
+    expect(saved).toEqual(definicaoReal);
+  });
+
+  it('never downgrades the block to an empty message node', () => {
+    const graph = definitionToGraph(definicaoReal);
+    const saved = graphToDefinition(graph.nodes, graph.edges);
+    const consultar = saved.nos.find((no) => no.id === 'consultar') as { tipo: string; dados: unknown };
+    expect(consultar.tipo).toBe('integracao_http');
+    expect(consultar.dados).not.toEqual({ texto: '' });
+  });
+});
+
+describe('integration node validation', () => {
+  it('rejects an integration without a selected credential', () => {
+    const issues = validateGraph([node('consultar', { kind: 'integration', url: 'https://api.exemplo.com' })], []);
+    expect(issues).toEqual([{ nodeId: 'consultar', message: 'Selecione a integração que este bloco vai chamar.' }]);
+  });
+
+  it('rejects an integration without a URL', () => {
+    const issues = validateGraph([node('consultar', { kind: 'integration', credentialId: 'cred-1', url: '' })], []);
+    expect(issues).toEqual([{ nodeId: 'consultar', message: 'Informe a URL da chamada.' }]);
+  });
+
+  it('rejects a response mapping with an invalid variable name', () => {
+    const nodes = [
+      node('consultar', {
+        kind: 'integration',
+        credentialId: 'cred-1',
+        url: 'https://api.exemplo.com',
+        mappings: [{ id: 'mapa_1', variavel: '1 invalido', caminho: '$.status' }],
+      }),
+    ];
+    expect(validateGraph(nodes, [])).toEqual([
+      { nodeId: 'consultar', message: 'O campo da resposta na posição 1 tem nome de variável inválido.' },
+    ]);
+  });
+
+  it('rejects a response mapping with an invalid path', () => {
+    const nodes = [
+      node('consultar', {
+        kind: 'integration',
+        credentialId: 'cred-1',
+        url: 'https://api.exemplo.com',
+        mappings: [{ id: 'mapa_1', variavel: 'status', caminho: 'status' }],
+      }),
+    ];
+    expect(validateGraph(nodes, [])).toEqual([
+      {
+        nodeId: 'consultar',
+        message: 'O campo da resposta na posição 1 tem caminho inválido. Use algo como $.dados.status.',
+      },
+    ]);
+  });
+
+  it('accepts an integration with no response mapping at all', () => {
+    const nodes = [node('consultar', { kind: 'integration', credentialId: 'cred-1', url: 'https://api.exemplo.com' })];
+    expect(validateGraph(nodes, [])).toEqual([]);
+  });
+
+  it('accepts a complete response mapping', () => {
+    const nodes = [
+      node('consultar', {
+        kind: 'integration',
+        credentialId: 'cred-1',
+        url: 'https://api.exemplo.com',
+        mappings: [{ id: 'mapa_1', variavel: 'pedido.status', caminho: '$.dados.status' }],
+      }),
+    ];
+    expect(validateGraph(nodes, [])).toEqual([]);
+  });
 });
 
 // O editor gerava ids a partir de um contador fixo em 10. Um fluxo salvo com

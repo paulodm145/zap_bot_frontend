@@ -14,6 +14,7 @@ export default defineConfig({
         'src/features/tenant/whatsapp.ts',
         'src/features/tenant/messages.ts',
         'src/features/flows/flow-rules.ts',
+        'src/features/flows/flow-mappings.ts',
         'src/lib/api/api-error.ts',
         'src/lib/api/api-client.ts',
         'src/lib/api/internal-api-client.ts',

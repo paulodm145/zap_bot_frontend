@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { limiteDeRegras } from './flow-catalog';
+import { limiteDeMapeamentos, limiteDeRegras } from './flow-catalog';
 import type { FlowBlockCatalog } from './flow-catalog';
 
 describe('limiteDeRegras', () => {
@@ -130,6 +130,55 @@ describe('limiteDeRegras', () => {
         }),
       ),
     ).toBe(50);
+  });
+});
+
+describe('limiteDeMapeamentos', () => {
+  const integrationCatalog = (validacao?: { maximoItens?: number }): FlowBlockCatalog => ({
+    schemaVersao: 1,
+    linguagemCondicao: { operadores: ['==', '!='], formato: 'variavel operador "valor"', exemplo: 'a == "1"' },
+    restricoesGrafo: { maximoBlocos: 500, ciclosPermitidos: false, padraoIdentificador: '^[A-Za-z]' },
+    blocos: [
+      {
+        tipo: 'integracao_http',
+        nome: 'Integração HTTP',
+        descricao: 'Consulta uma API externa',
+        icone: 'webhook',
+        comportamento: { pausaExecucao: true, produzSaida: false, podeFinalizarFluxo: true },
+        configuracaoInicial: {},
+        campos: validacao
+          ? [
+              {
+                caminho: 'dados.mapeamentoResposta',
+                rotulo: 'Resposta em variáveis',
+                descricao: 'Mapeia campos da resposta em variáveis',
+                tipo: 'mapa_extracao',
+                obrigatorio: true,
+                validacao,
+              },
+            ]
+          : [],
+        conexoes: {
+          aceitaEntrada: true,
+          saidas: [
+            { chave: 'sucesso', rotulo: 'Sucesso', tipo: 'unica', obrigatoria: false },
+            { chave: 'falha', rotulo: 'Falha', tipo: 'unica', obrigatoria: false },
+          ],
+        },
+      },
+    ],
+  });
+
+  it('returns 20 when catalog is undefined', () => {
+    expect(limiteDeMapeamentos(undefined)).toBe(20);
+  });
+
+  it('returns 20 when the integration block or field is absent', () => {
+    expect(limiteDeMapeamentos(integrationCatalog())).toBe(20);
+  });
+
+  it('returns the custom maximoItens declared by the backend', () => {
+    expect(limiteDeMapeamentos(integrationCatalog({ maximoItens: 5 }))).toBe(5);
   });
 });
 
