@@ -21,6 +21,33 @@ export function useConversations(view: string, realtime = false) {
     refetchInterval: realtime ? false : 15000,
   });
 }
+
+const TODAS_AS_VIEWS = ['FILA', 'MINHAS', 'BOT', 'ENCERRADA'];
+
+/**
+ * Total de cada aba, sem baixar a lista inteira (`take=1`, só o `total`
+ * importa aqui). Chave sob `keys` para herdar de graça a invalidação que os
+ * eventos de socket já disparam em `['tenant', 'conversations']` — nenhum
+ * evento novo precisou ser escutado para isso ficar em tempo real.
+ */
+export function useConversationCounts(realtime = false) {
+  return useQuery({
+    queryKey: [...keys, 'counts'],
+    queryFn: async ({ signal }) => {
+      const entradas = await Promise.all(
+        TODAS_AS_VIEWS.map(async (view) => {
+          const status = statusPorView[view];
+          const query = new URLSearchParams({ skip: '0', take: '1', visao: status ? 'TODAS' : view });
+          if (status) query.set('status', status);
+          const pagina = await apiRequest<Page<Conversation>>(`/conversas?${query}`, { signal });
+          return [view, pagina.total] as const;
+        }),
+      );
+      return Object.fromEntries(entradas) as Record<string, number>;
+    },
+    refetchInterval: realtime ? false : 20000,
+  });
+}
 export function useConversation(id?: string) {
   return useQuery({
     queryKey: [...keys, 'detail', id],
