@@ -8,6 +8,7 @@ import {
   useAssumeConversation,
   useCloseConversation,
   useConversation,
+  useConversationCounts,
   useConversations,
   useMessages,
   useReassignConversation,
@@ -44,6 +45,7 @@ export function ChatView() {
   const availableViews = views.filter((item) => !item.roles || (me.data && item.roles.includes(me.data.papel)));
   const realtime = useConversationSocket(selected);
   const list = useConversations(view, realtime.connected);
+  const counts = useConversationCounts(realtime.connected);
   const detail = useConversation(selected);
   const messages = useMessages(selected, realtime.connected);
   const sectors = useSectors('', 0, 100, true);
@@ -94,11 +96,16 @@ export function ChatView() {
       <div className={styles.workspace}>
         <aside className={styles.list}>
           <div className={styles.tabs}>
-            {availableViews.map((item) => (
-              <button key={item.value} onClick={() => setView(item.value)} aria-pressed={view === item.value}>
-                {item.label}
-              </button>
-            ))}
+            {availableViews.map((item) => {
+              const total = counts.data?.[item.value];
+              return (
+                <button key={item.value} onClick={() => setView(item.value)} aria-pressed={view === item.value}>
+                  {item.label}
+                  {/* Encerradas não é fila de trabalho pendente; contá-la só adicionaria ruído. */}
+                  {item.value !== 'ENCERRADA' && !!total && <span className={styles.tabCount}>{total}</span>}
+                </button>
+              );
+            })}
           </div>
           {list.data?.dados.map((item) => (
             <button
