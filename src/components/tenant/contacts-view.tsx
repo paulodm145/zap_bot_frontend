@@ -86,7 +86,11 @@ export function ContactsView() {
     ],
     [],
   );
-  const error = list.error ?? remove.error ?? start.error;
+  // Erro de carregar a lista fica fixo na tela porque afeta tudo que segue
+  // (tabela vazia sem explicação). Erros de excluir/iniciar conversa são
+  // ações pontuais — já aparecem em toast (ver AppProviders) e, no caso da
+  // exclusão, também dentro do próprio ConfirmDialog.
+  const error = list.error;
   return (
     <AppShell
       title="Contatos"
