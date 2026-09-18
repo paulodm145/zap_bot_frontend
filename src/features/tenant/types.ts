@@ -33,6 +33,16 @@ export type TenantUser = {
   ativo: boolean;
   setores?: Sector[];
 };
+export type Contact = {
+  public_id: string;
+  nome?: string | null;
+  telefone: string;
+  atributos?: Record<string, unknown> | null;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+  _count: { conversas: number };
+};
 export type Conversation = {
   public_id: string;
   status: 'BOT' | 'AGUARDANDO_ATENDENTE' | 'COM_ATENDENTE' | 'ENCERRADA';

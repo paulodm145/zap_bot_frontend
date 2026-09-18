@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { useConversationSocket } from '@/hooks/tenant/use-conversation-socket';
@@ -33,8 +34,15 @@ const views: Array<{ value: string; label: string; roles?: Role[] }> = [
 ];
 
 export function ChatView() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState('FILA');
-  const [selected, setSelected] = useState<string>();
+  // Abre direto numa conversa vinda de fora (ex.: "Mensagem" na tela de
+  // Contatos): lê o parâmetro só na primeira renderização. Não muda a aba
+  // ativa — a conversa é carregada por id independente da lista, só pode não
+  // aparecer destacada na lateral.
+  const [selected, setSelected] = useState<string | undefined>(
+    () => searchParams.get('conversa') ?? undefined,
+  );
   const [text, setText] = useState('');
   const [reassigning, setReassigning] = useState(false);
   const [reassignSector, setReassignSector] = useState('');
