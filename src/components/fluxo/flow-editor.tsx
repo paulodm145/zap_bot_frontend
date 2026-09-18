@@ -34,6 +34,7 @@ import {
   Trash2,
   Undo2,
   Users,
+  Webhook,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -63,10 +64,12 @@ import {
   type FlowBlockCatalogItem,
   type FlowBlockType,
 } from '@/hooks/flows/use-flow-block-catalog';
-import { limiteDeRegras } from '@/features/flows/flow-catalog';
+import { limiteDeMapeamentos, limiteDeRegras, METODOS_HTTP } from '@/features/flows/flow-catalog';
 import { nextRuleId, rulesToEdges, variaveisDisponiveis } from '@/features/flows/flow-rules';
-import type { FlowRule } from '@/features/flows/types';
+import type { FlowHttpMethod, FlowRule } from '@/features/flows/types';
 import { ConditionRulesEditor } from './condition-rules-editor';
+import { ResponseMappingEditor } from './response-mapping-editor';
+import { useIntegrationCredentials } from '@/hooks/tenant/use-integration-credentials';
 
 type FlowData = FlowNodeData;
 type Tool = {
@@ -78,7 +81,13 @@ type Tool = {
   content: string;
 };
 
-const iconMap = { message: MessageSquareText, capture: TextCursorInput, condition: GitBranch, team: Users };
+const iconMap = {
+  message: MessageSquareText,
+  capture: TextCursorInput,
+  condition: GitBranch,
+  team: Users,
+  integration: Webhook,
+};
 /** Chave estável por erro, para o toast remontar quando um erro diferente chega. */
 function errorToastKey(error: unknown): string {
   return isApiError(error) ? `${error.code}-${error.correlationId ?? error.message}` : 'inesperado';
@@ -116,7 +125,14 @@ function FlowNode({ id, data, selected }: NodeProps<Node<FlowData>>) {
         <strong>{data.detail}</strong>
         {data.validationError && <em>{data.validationError}</em>}
       </div>
-      {data.kind !== 'team' && <Handle type="source" position={Position.Bottom} />}
+      {data.kind === 'integration' ? (
+        <>
+          <Handle type="source" position={Position.Bottom} id="sucesso" style={{ left: '30%' }} title="Sucesso" />
+          <Handle type="source" position={Position.Bottom} id="falha" style={{ left: '70%' }} title="Falha" />
+        </>
+      ) : (
+        data.kind !== 'team' && <Handle type="source" position={Position.Bottom} />
+      )}
     </div>
   );
 }
@@ -200,6 +216,7 @@ const visualByType: Record<FlowBlockType, { icon: typeof MessageSquareText; tone
   captura_resposta: { icon: TextCursorInput, tone: 'capture' },
   condicao: { icon: GitBranch, tone: 'condition' },
   direcionar_setor: { icon: Users, tone: 'team' },
+  integracao_http: { icon: Webhook, tone: 'integration' },
 };
 
 /**
@@ -251,6 +268,7 @@ function FlowEditorContent({
   const simulation = useSimulateFlow(flowId);
   const catalog = useFlowBlockCatalog();
   const sectors = useSectors('', 0, 100, true);
+  const credentials = useIntegrationCredentials();
   const me = useMe();
   const canManage = me.data?.papel !== 'ATENDENTE';
   const [simulationOpen, setSimulationOpen] = useState(false);
@@ -329,6 +347,26 @@ function FlowEditorContent({
         setSelectedId(source.id);
         return;
       }
+      if (source?.data.kind === 'integration') {
+        // Cada saída (sucesso/falha) aceita só um destino: uma nova conexão
+        // no mesmo handle substitui a anterior em vez de somar uma segunda.
+        const handle = connection.sourceHandle === 'falha' ? 'falha' : 'sucesso';
+        const label = handle === 'falha' ? 'Falha' : 'Sucesso';
+        const edge: Edge = {
+          id: `${source.id}-${handle}`,
+          source: source.id,
+          sourceHandle: handle,
+          target: connection.target,
+          targetHandle: connection.targetHandle,
+          label,
+          ...edgeDefaults,
+        };
+        setEdges((current) => [
+          ...current.filter((item) => !(item.source === source.id && item.sourceHandle === handle)),
+          edge,
+        ]);
+        return;
+      }
       setEdges((current) => addEdge({ ...connection, ...edgeDefaults }, current));
     },
     [displayEdges, nodes, setEdges, setNodes],
@@ -364,6 +402,7 @@ function FlowEditorContent({
         icon: tool.tone,
         content: tool.content,
         ...(tool.type === 'direcionar_setor' ? { sectorId: '' } : {}),
+        ...(tool.type === 'integracao_http' ? { credentialId: '', method: 'GET' as const, url: '', mappings: [] } : {}),
       },
     };
     setNodes((current) => [...current, node]);
@@ -395,6 +434,14 @@ function FlowEditorContent({
     if (!selectedId) return;
     setNodes((current) =>
       current.map((node) => (node.id === selectedId ? { ...node, data: { ...node.data, [field]: value } } : node)),
+    );
+  }
+
+  /** Bloco de integração tem campos demais pra caber na assinatura de `updateSelected`. */
+  function updateIntegration(patch: Partial<FlowData>) {
+    if (!selectedId) return;
+    setNodes((current) =>
+      current.map((node) => (node.id === selectedId ? { ...node, data: { ...node.data, ...patch } } : node)),
     );
   }
 
@@ -456,11 +503,13 @@ function FlowEditorContent({
   return (
     <main className={styles.editor}>
       {saveError && (
-        <FeedbackToast error={saveError} title="Não foi possível salvar" key={`save-erro-${errorToastKey(saveError)}`} />
+        <FeedbackToast
+          error={saveError}
+          title="Não foi possível salvar"
+          key={`save-erro-${errorToastKey(saveError)}`}
+        />
       )}
-      {saved && (
-        <FeedbackToast tone="success" message="Fluxo salvo." key={`save-ok-${String(saveOkCount)}`} />
-      )}
+      {saved && <FeedbackToast tone="success" message="Fluxo salvo." key={`save-ok-${String(saveOkCount)}`} />}
       {publishBlockedMessage && (
         <FeedbackToast
           message={publishBlockedMessage}
@@ -566,8 +615,8 @@ function FlowEditorContent({
           <div>
             <strong>Como montar</strong>
             <p>
-              Mensagem envia texto; Captura salva uma resposta; Condição escolhe um caminho; Direcionar setor encerra o
-              bot e envia à fila humana.
+              Mensagem envia texto; Captura salva uma resposta; Condição escolhe um caminho; Integração chama uma API e
+              segue por sucesso ou falha; Direcionar setor encerra o bot e envia à fila humana.
             </p>
           </div>
         </div>
@@ -685,6 +734,69 @@ function FlowEditorContent({
                     conexão de saída.
                   </p>
                   {sectors.error && <p role="alert">Não foi possível carregar os setores.</p>}
+                </div>
+              </>
+            ) : selected.data.kind === 'integration' ? (
+              <>
+                <label>
+                  <span>Integração</span>
+                  <select
+                    value={selected.data.credentialId ?? ''}
+                    onChange={(event) => updateIntegration({ credentialId: event.target.value })}
+                    disabled={credentials.isLoading}
+                  >
+                    <option value="">Selecione uma integração ativa</option>
+                    {credentials.data?.dados.map((credential) => (
+                      <option key={credential.public_id} value={credential.public_id}>
+                        {credential.nome}
+                      </option>
+                    ))}
+                  </select>
+                  {credentials.error && <small>Não foi possível carregar as integrações.</small>}
+                </label>
+                <label>
+                  <span>Método</span>
+                  <select
+                    value={selected.data.method ?? 'GET'}
+                    onChange={(event) => updateIntegration({ method: event.target.value as FlowHttpMethod })}
+                  >
+                    {METODOS_HTTP.map((metodo) => (
+                      <option key={metodo} value={metodo}>
+                        {metodo}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>URL</span>
+                  <input
+                    value={selected.data.url ?? ''}
+                    onChange={(event) => updateIntegration({ url: event.target.value })}
+                    placeholder="https://api.exemplo.com/recurso/{{variavel}}"
+                  />
+                  <small>Precisa começar pelo endereço da integração escolhida acima. Aceita {'{{variavel}}'}.</small>
+                </label>
+                <label>
+                  <span>Corpo (opcional)</span>
+                  <textarea
+                    value={selected.data.requestBody ?? ''}
+                    onChange={(event) => updateIntegration({ requestBody: event.target.value })}
+                    rows={3}
+                    placeholder={'{"campo": "{{variavel}}"}'}
+                  />
+                </label>
+                <ResponseMappingEditor
+                  mapeamentos={selected.data.mappings ?? []}
+                  maximoItens={limiteDeMapeamentos(catalog.data)}
+                  disabled={!canManage}
+                  onChange={(mappings) => updateIntegration({ mappings })}
+                />
+                <div className={styles.blockHelp}>
+                  <strong>Como funciona</strong>
+                  <p>
+                    A execução chama a integração e segue por uma das duas saídas do bloco: a da esquerda quando a
+                    chamada dá certo, a da direita quando falha.
+                  </p>
                 </div>
               </>
             ) : (

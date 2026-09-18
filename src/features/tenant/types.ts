@@ -17,6 +17,14 @@ export type Sector = {
   ativo: boolean;
   created_at?: string;
 };
+/** Segredo nunca trafega pra cá — a API de integrações não o devolve em nenhuma resposta. */
+export type IntegrationCredential = {
+  public_id: string;
+  nome: string;
+  tipo_auth: string;
+  base_url: string;
+  ativo: boolean;
+};
 export type TenantUser = {
   public_id: string;
   nome: string;

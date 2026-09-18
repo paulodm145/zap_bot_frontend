@@ -1,6 +1,8 @@
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import type { FlowDefinition, FlowNodeData } from './types';
+import type { FlowDefinition, FlowHttpMethod, FlowNodeData } from './types';
 import { ordinal, parseRule, serializeRule, variaveisDisponiveis } from './flow-rules';
+import { mappingsToRecord, recordToMappings } from './flow-mappings';
+import { METODOS_HTTP } from './flow-catalog';
 
 export type { FlowNodeData } from './types';
 export type FlowGraph = { nodes: Node<FlowNodeData>[]; edges: Edge[] };
@@ -20,6 +22,7 @@ function kindFromType(type: unknown) {
   if (type === 'captura_resposta') return 'capture';
   if (type === 'condicao') return 'condition';
   if (type === 'direcionar_setor') return 'team';
+  if (type === 'integracao_http') return 'integration';
   return 'message';
 }
 
@@ -77,6 +80,23 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
               padraoId: typeof data.padrao === 'string' ? data.padrao : '',
             }
           : {}),
+        ...(kind === 'integration'
+          ? {
+              credentialId: typeof data.credencialId === 'string' ? data.credencialId : '',
+              method: (METODOS_HTTP as string[]).includes(String(data.metodo))
+                ? (data.metodo as FlowHttpMethod)
+                : 'GET',
+              url: typeof data.url === 'string' ? data.url : '',
+              ...(typeof data.corpo === 'string' ? { requestBody: data.corpo } : {}),
+              mappings: recordToMappings(
+                typeof data.mapeamentoResposta === 'object' && data.mapeamentoResposta !== null
+                  ? (data.mapeamentoResposta as Record<string, unknown>)
+                  : {},
+              ),
+              ...(typeof raw.sucesso === 'string' ? { successId: raw.sucesso } : {}),
+              ...(typeof raw.falha === 'string' ? { failureId: raw.falha } : {}),
+            }
+          : {}),
       },
     } satisfies Node<FlowNodeData>;
   });
@@ -85,6 +105,24 @@ export function definitionToGraph(definition: FlowDefinition): FlowGraph {
     const source = String(raw.id);
     if (typeof raw.proximo === 'string')
       edges.push({ id: `${source}-${raw.proximo}`, source, target: raw.proximo, ...edgeStyle });
+    if (typeof raw.sucesso === 'string')
+      edges.push({
+        id: `${source}-sucesso`,
+        source,
+        sourceHandle: 'sucesso',
+        target: raw.sucesso,
+        label: 'Sucesso',
+        ...edgeStyle,
+      });
+    if (typeof raw.falha === 'string')
+      edges.push({
+        id: `${source}-falha`,
+        source,
+        sourceHandle: 'falha',
+        target: raw.falha,
+        label: 'Falha',
+        ...edgeStyle,
+      });
   });
   return { nodes, edges };
 }
@@ -132,6 +170,22 @@ function validateCondition(node: Node<FlowNodeData>, nodes: Node<FlowNodeData>[]
  * inteira e responde 400 sem identificar o nó, então a checagem local é o que
  * permite destacar o bloco culpado na tela.
  */
+/** Espelha `caminhoExtracaoSchema` do backend. */
+const caminhoPattern = /^\$(\.[A-Za-z_][A-Za-z0-9_]*|\[\d{1,4}\])+$/;
+
+function validateIntegration(node: Node<FlowNodeData>): string | undefined {
+  if (!node.data.credentialId) return 'Selecione a integração que este bloco vai chamar.';
+  if (!node.data.url?.trim()) return 'Informe a URL da chamada.';
+  for (const [index, mapping] of (node.data.mappings ?? []).entries()) {
+    if (!mapping.variavel && !mapping.caminho) continue;
+    if (!mapping.variavel || !variablePattern.test(mapping.variavel))
+      return `O campo da resposta na posição ${String(index + 1)} tem nome de variável inválido.`;
+    if (!mapping.caminho || !caminhoPattern.test(mapping.caminho))
+      return `O campo da resposta na posição ${String(index + 1)} tem caminho inválido. Use algo como $.dados.status.`;
+  }
+  return undefined;
+}
+
 export function validateGraph(nodes: Node<FlowNodeData>[], edges: Edge[]): GraphValidationIssue[] {
   const issues: GraphValidationIssue[] = [];
   for (const node of nodes) {
@@ -141,6 +195,9 @@ export function validateGraph(nodes: Node<FlowNodeData>[], edges: Edge[]): Graph
       issues.push({ nodeId: node.id, message: 'Informe a variável que guardará a resposta.' });
     } else if (node.data.kind === 'condition') {
       const message = validateCondition(node, nodes, edges);
+      if (message) issues.push({ nodeId: node.id, message });
+    } else if (node.data.kind === 'integration') {
+      const message = validateIntegration(node);
       if (message) issues.push({ nodeId: node.id, message });
     } else if (node.data.kind === 'message' && !node.data.content.trim()) {
       issues.push({ nodeId: node.id, message: 'Escreva o texto que o bot vai enviar.' });
@@ -176,6 +233,24 @@ export function graphToDefinition(nodes: Node<FlowNodeData>[], edges: Edge[]): F
           dados: { setorId: node.data.sectorId ?? '' },
           posicao,
         };
+      if (node.data.kind === 'integration') {
+        const sucesso = outgoing.find((edge) => edge.sourceHandle === 'sucesso')?.target;
+        const falha = outgoing.find((edge) => edge.sourceHandle === 'falha')?.target;
+        return {
+          id: node.id,
+          tipo: 'integracao_http',
+          dados: {
+            credencialId: node.data.credentialId ?? '',
+            metodo: node.data.method ?? 'GET',
+            url: node.data.url ?? '',
+            ...(node.data.requestBody ? { corpo: node.data.requestBody } : {}),
+            mapeamentoResposta: mappingsToRecord(node.data.mappings ?? []),
+          },
+          ...(sucesso ? { sucesso } : {}),
+          ...(falha ? { falha } : {}),
+          posicao,
+        };
+      }
       const tipo = node.data.kind === 'capture' ? 'captura_resposta' : 'mensagem';
       return {
         id: node.id,

@@ -177,4 +177,19 @@ describe('variables reaching a condition', () => {
     ];
     expect(variaveisDisponiveis(nodes, edges, 'no_2')).toEqual(['opcao']);
   });
+
+  it('lists variables extracted by an integration block that reaches the condition', () => {
+    const nodes = [
+      node('no_1', {
+        kind: 'integration',
+        mappings: [
+          { id: 'mapa_1', variavel: 'pedido.status', caminho: '$.status' },
+          { id: 'mapa_2', variavel: 'pedido.total', caminho: '$.total' },
+        ],
+      }),
+      node('no_2', { kind: 'condition' }),
+    ];
+    const edges: Edge[] = [{ id: 'e1', source: 'no_1', target: 'no_2' }];
+    expect(variaveisDisponiveis(nodes, edges, 'no_2')).toEqual(['pedido.status', 'pedido.total']);
+  });
 });
