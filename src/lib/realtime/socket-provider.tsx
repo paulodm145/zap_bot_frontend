@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { refreshAccessToken } from '@/lib/api/api-client';
 import { useSession } from '@/hooks/auth/use-session';
@@ -27,17 +27,12 @@ type SocketContextValue = {
   socket: Socket | null;
   connected: boolean;
   presence: ReadonlyMap<string, boolean>;
-  /** Chegou mensagem de contato ou conversa nova na fila desde a última vez que `markConversationsSeen` foi chamado. */
-  hasNewConversationActivity: boolean;
-  markConversationsSeen: () => void;
 };
 
 const SocketContext = createContext<SocketContextValue>({
   socket: null,
   connected: false,
   presence: new Map(),
-  hasNewConversationActivity: false,
-  markConversationsSeen: () => {},
 });
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1').replace(/\/$/, '');
@@ -61,7 +56,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [presence, setPresence] = useState<ReadonlyMap<string, boolean>>(new Map());
-  const [hasNewConversationActivity, setHasNewConversationActivity] = useState(false);
 
   useEffect(() => {
     const token = session.accessToken;
@@ -108,21 +102,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'conversations'] });
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'conversations', 'detail', event.conversaId] });
     };
-    // Conversa nova na fila é a única das três que ainda não tem ninguém olhando.
-    const conversationQueued = (event: ConversationEvent) => {
-      conversationChanged(event);
-      if (event.tenantId === tenantId) setHasNewConversationActivity(true);
-    };
+    // Mensagem nova também muda `ultima_mensagem` na lista e o total das
+    // abas (contadores em use-conversations.ts) — não só o detalhe/thread
+    // da conversa aberta. Por isso invalida a mesma chave base que
+    // `conversationChanged` usa, além das próprias mensagens.
     const messageChanged = (event: ConversationEvent) => {
       if (event.tenantId !== tenantId) return;
+      void queryClient.invalidateQueries({ queryKey: ['tenant', 'conversations'] });
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'conversations', event.conversaId, 'messages'] });
       void queryClient.invalidateQueries({ queryKey: ['tenant', 'conversations', 'detail', event.conversaId] });
-    };
-    // `mensagem_recebida` é mensagem nova de contato; `mensagem_atualizada` só
-    // muda status de entrega de mensagem já enviada — não é novidade para alertar.
-    const messageReceived = (event: ConversationEvent) => {
-      messageChanged(event);
-      if (event.tenantId === tenantId) setHasNewConversationActivity(true);
     };
     const presenceChanged = (event: PresenceEvent) => {
       setPresence((previous) => {
@@ -136,10 +124,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     current.on('disconnect', disconnected);
     current.on('connect_error', connectError);
     current.on('sessao:expirada', sessionExpired);
-    current.on('conversa:nova_na_fila', conversationQueued);
+    current.on('conversa:nova_na_fila', conversationChanged);
     current.on('conversa:assumida', conversationChanged);
     current.on('conversa:atualizada', conversationChanged);
-    current.on('conversa:mensagem_recebida', messageReceived);
+    current.on('conversa:mensagem_recebida', messageChanged);
     current.on('conversa:mensagem_atualizada', messageChanged);
     current.on('atendente:presenca', presenceChanged);
     current.connect();
@@ -152,11 +140,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     };
   }, [queryClient, session.accessToken, session.impersonation, session.user?.tenantId]);
 
-  const markConversationsSeen = useCallback(() => setHasNewConversationActivity(false), []);
-  const value = useMemo(
-    () => ({ socket, connected, presence, hasNewConversationActivity, markConversationsSeen }),
-    [connected, hasNewConversationActivity, markConversationsSeen, presence, socket],
-  );
+  const value = useMemo(() => ({ socket, connected, presence }), [connected, presence, socket]);
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 }
 

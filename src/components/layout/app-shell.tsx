@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,7 +26,7 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { useSession } from '@/hooks/auth/use-session';
 import { sessionStore } from '@/lib/auth/session-store';
 import { useMe } from '@/hooks/tenant/use-me';
-import { useSocket } from '@/lib/realtime/socket-provider';
+import { useConversationCounts } from '@/hooks/tenant/use-conversations';
 import type { Role } from '@/features/tenant/types';
 
 const ATENDIMENTO_HREF = '/atendimento';
@@ -59,11 +59,13 @@ export function AppShell({
   const me = useMe();
   const [open, setOpen] = useState(false);
   const logout = useLogout();
-  const { hasNewConversationActivity, markConversationsSeen } = useSocket();
+  // Mesma contagem real das abas do painel de atendimento (use-conversations.ts):
+  // fila (não reivindicada) + minhas (atribuídas a mim). Atualiza sozinha
+  // porque os eventos de socket já invalidam essa chave de cache, sem
+  // precisar de um sinal binário próprio.
+  const counts = useConversationCounts();
+  const pendentes = (counts.data?.FILA ?? 0) + (counts.data?.MINHAS ?? 0);
 
-  useEffect(() => {
-    if (pathname.startsWith(ATENDIMENTO_HREF)) markConversationsSeen();
-  }, [markConversationsSeen, pathname]);
   return (
     <AuthGuard>
       <div className={styles.shell}>
@@ -89,7 +91,7 @@ export function AppShell({
               .map((item) => {
                 const Icon = item.icon;
                 const active = pathname.startsWith(item.href);
-                const showAlert = item.href === ATENDIMENTO_HREF && hasNewConversationActivity && !active;
+                const showCount = item.href === ATENDIMENTO_HREF && pendentes > 0 && !active;
                 return (
                   <Link
                     key={item.label}
@@ -99,7 +101,7 @@ export function AppShell({
                   >
                     <Icon size={19} />
                     <span>{item.label}</span>
-                    {showAlert && <b aria-label="Mensagens novas">novo</b>}
+                    {showCount && <b aria-label={`${String(pendentes)} conversas aguardando`}>{pendentes}</b>}
                   </Link>
                 );
               })}
