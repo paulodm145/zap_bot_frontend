@@ -69,8 +69,8 @@ Variável de ambiente: `NEXT_PUBLIC_API_URL` (veja `.env.example`).
 `docs/` é um espelho literal de `docs/` do repositório `backend_zap_bot`. Trate
 como contrato de referência somente leitura: descreve endpoints, eventos e
 schemas do backend, e vários arquivos ali têm escopo exclusivamente de backend
-(`DIAGNOSTICO-INICIAL.md`, `CONTRIBUICAO.md`, `revisao-qa.md`). Não conclua nada
-sobre este repositório a partir deles.
+(`DIAGNOSTICO-INICIAL.md`, `CONTRIBUICAO.md`). Não conclua nada sobre este
+repositório a partir deles.
 
 Documentos próprios do frontend, na raiz:
 
