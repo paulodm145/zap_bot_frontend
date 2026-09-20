@@ -4,9 +4,8 @@
   como referência somente leitura: não edite ali para descrever comportamento
   deste frontend.
 - Vários arquivos de `docs/` têm escopo exclusivo de backend
-  (`DIAGNOSTICO-INICIAL.md`, `CONTRIBUICAO.md`, `revisao-qa.md`,
-  `ARQUITETURA-BACKEND.md`). Não os use para concluir nada sobre este
-  repositório.
+  (`DIAGNOSTICO-INICIAL.md`, `CONTRIBUICAO.md`, `ARQUITETURA-BACKEND.md`). Não
+  os use para concluir nada sobre este repositório.
 - Para consumir um endpoint, comece por `docs/api/<funcionalidade>.md` e
   `docs/api/CLIENTE-FRONTEND.md`; para tempo real, `docs/eventos/websocket.md`.
   O OpenAPI do backend é a fonte executável dos schemas.
